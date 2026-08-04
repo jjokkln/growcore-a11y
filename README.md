@@ -2,8 +2,10 @@
 
 Barrierefreiheits-Panel für GrowCore-Websites: Schriftgröße, Zeilenabstand,
 Kontrastmodi, Farbfehlsicht-**Korrektur**, Blaulichtfilter, Bilder ausblenden,
-Lesehilfen. Framework-freier Kern, optionale React-Hülle, `<script>`-Bundle für
-Seiten ohne Build.
+Lesehilfen. Framework-freier Kern plus React-Hülle.
+
+**Einbauanleitung: [INSTALL.md](INSTALL.md)** — geschrieben so, dass man sie einer
+KI in die Hand geben kann.
 
 ## Was das hier NICHT ist
 
@@ -42,10 +44,14 @@ src/core/     framework-frei, kennt nur das DOM
   boot.ts       das flackerfreie Inline-Skript
   storage.ts    localStorage, versioniert, wurffest
   apply.ts      Laufzeit-Anwendung
-src/styles/   a11y.css — alle Effektregeln, plain CSS
-src/react/    <A11yWidget />, <A11yBootScript />
-src/vanilla/  IIFE-Einstieg für Seiten ohne Build
+src/styles/   a11y.css (Effekte) + panel.css (Panel selbst), plain CSS
+src/react/    <A11yWidget />, <A11yBootScript />, <A11yFilterDefs />
+fonts/        Atkinson Hyperlegible + OpenDyslexic (beide OFL) + fonts.css
 ```
+
+**Noch nicht gebaut:** ein `<script>`-Bundle für Seiten ohne Build-Schritt. Alle
+GrowCore-Projekte sind Next/React, deshalb war es bisher unnötig — wer es braucht,
+baut einen IIFE-Einstieg um `applySettings` + `bootScript` + `ensureCvdSvg`.
 
 Der Zustand ist eine flache, serialisierbare Struktur. Er landet als
 `data-a11y-*`-Attribute und CSS-Variablen auf `<html>`; eine statische

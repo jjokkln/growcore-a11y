@@ -1,0 +1,75 @@
+/*
+ * ============================================================================
+ * fonts.css — die zwei Leseschriften, selbst gehostet
+ * ============================================================================
+ *
+ * **Ohne diese Datei tun die zwei Schriftart-Optionen im Panel nichts.**
+ * `a11y.css` setzt nur die `font-family`; ist die Familie nicht geladen, fällt der
+ * Browser lautlos auf die Systemschrift zurück — der Schalter lässt sich umlegen
+ * und es passiert nichts. Genau der Fehler, den das Paket bei Firefox vermeidet,
+ * nur unauffälliger. Deshalb ist der Import Pflicht, nicht Kür.
+ *
+ * Selbst gehostet, nicht über Google Fonts eingebunden: ein `<link>` auf
+ * fonts.googleapis.com schickt die IP jedes Besuchers an Google und ist die
+ * meistabgemahnte DSGVO-Feststellung auf deutschen Websites. Die Dateien liegen
+ * neben dieser Datei im Paket und werden vom Bundler mit ausgeliefert.
+ *
+ * Beide Schriften stehen unter der SIL Open Font License 1.1. Die Lizenztexte
+ * liegen als `LICENSE-AtkinsonHyperlegible.txt` und `LICENSE-OpenDyslexic.txt`
+ * daneben — die OFL verlangt, dass sie mitgehen.
+ *
+ * ── Zur Wirksamkeit, damit niemand mehr verspricht als belegt ist ────────────
+ *
+ * **Atkinson Hyperlegible** (Braille Institute, 2020) ist für Menschen mit
+ * Sehbehinderung entworfen: Buchstaben, die sonst verwechselt werden — I, l, 1,
+ * O, 0 — sind gezielt unterschiedlich geformt. Das ist die Stufe mit der
+ * besseren Begründung, deshalb heißt sie im Panel „Gut lesbar" und steht zuerst.
+ *
+ * **OpenDyslexic** beschwert die Buchstabenfüße, damit sie sich beim Lesen nicht
+ * drehen. Die Studienlage stützt **nicht**, dass sich damit die Leseleistung bei
+ * Legasthenie messbar verbessert. Belegt ist die Präferenz: viele Betroffene
+ * lesen lieber damit. Bei einem freiwilligen Schalter ist das ein ausreichender
+ * Grund — als Wirksamkeitsversprechen wäre es falsch.
+ *
+ * Nur Regular und Bold, kein Kursiv: mehr Schnitte kosten Ladezeit für einen
+ * Fall, der auf einer Website praktisch nicht vorkommt. Atkinson ist zusätzlich
+ * auf den Latin-Bereich beschnitten (11 kB je Schnitt); OpenDyslexic gibt es nur
+ * vollständig (~105 kB je Schnitt) — beide werden ohnehin erst geladen, wenn
+ * jemand die Option wählt.
+ * ============================================================================
+ */
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 400;
+  /* `swap`, weil Lesbarkeit vor Layoutstabilität geht: Wer diese Schrift wählt,
+   * will sie sehen, sobald sie da ist — nicht erst nach einer unsichtbaren
+   * Wartezeit. */
+  font-display: swap;
+  src: url("./atkinson-hyperlegible-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./atkinson-hyperlegible-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./opendyslexic-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./opendyslexic-700.woff2") format("woff2");
+}

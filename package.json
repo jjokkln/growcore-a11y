@@ -11,7 +11,8 @@
     "./react": "./dist/react/index.js",
     "./styles.css": "./src/styles/a11y.css",
     "./fonts/*": "./fonts/*",
-    "./panel.css": "./src/styles/panel.css"
+    "./panel.css": "./src/styles/panel.css",
+    "./fonts.css": "./fonts/fonts.css"
   },
   "files": [
     "dist",

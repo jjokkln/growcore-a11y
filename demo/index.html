@@ -10,6 +10,9 @@
       Seiten-CSS unten: was hier nicht wirkt, wirkt auch im Projekt nicht.
     -->
     <link rel="stylesheet" href="/src/styles/a11y.css" />
+    <!-- Ohne diese Datei setzt a11y.css nur den Familiennamen und der Browser
+         fällt lautlos auf die Systemschrift zurück. -->
+    <link rel="stylesheet" href="/fonts/fonts.css" />
 
     <style>
       /*
@@ -189,6 +192,14 @@
         erzwingen" etwas zu tun hat. Blocksatz erzeugt in schmalen Spalten
         Löcher zwischen den Wörtern, die für manche Menschen als senkrechte
         Flüsse wahrgenommen werden und das Lesen erschweren.
+      </p>
+
+      <p>
+        Messstrecke für den Schriftwechsel (die Zeichen unterscheiden sich
+        zwischen Schriften besonders deutlich):
+        <span id="type-probe" style="white-space: nowrap"
+          >Illustration 0O1lI — Hamburgefonstiv</span
+        >
       </p>
 
       <h2>Ein Abschnitt mit Auszeichnungen</h2>

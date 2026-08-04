@@ -179,11 +179,42 @@ async function run(engineName, type) {
   await reset(page);
 
   // --- 4. Schriftart -----------------------------------------------------
-  await setSetting(page, "font", "dyslexic");
-  ok(
-    "Legasthenie-Schrift wird gesetzt",
-    (await computed(page, "#content p", "font-family")).includes("OpenDyslexic"),
-  );
+  //
+  // Die naheliegende Prüfung — `font-family` enthält "OpenDyslexic" — ist
+  // wertlos: Sie ist auch dann grün, wenn die Schrift gar nicht geladen wurde,
+  // weil `a11y.css` den Namen ja setzt und der Browser dann lautlos auf die
+  // Systemschrift zurückfällt. Genau so ist das Paket zuerst ausgeliefert worden:
+  // fonts/ war leer, es gab keine @font-face-Regeln, und beide Schriftoptionen
+  // taten nichts. Also zwei echte Prüfungen:
+  //   (a) document.fonts.check() sagt, ob die Familie tatsächlich verfügbar ist
+  //   (b) die gemessene Textbreite ändert sich — der Beweis, dass auch gerendert
+  //       wird, was verfügbar gemeldet wurde
+  // Inline-Breite, nicht Absatzhöhe: ein Absatz ist breitenbeschränkt, seine
+  // Höhe ändert sich nur, wenn die Zeilenzahl umschlägt. Bei Atkinson
+  // Hyperlegible, dessen Metriken system-ui nahe sind, tut sie das nicht — die
+  // erste Fassung dieser Prüfung meldete deshalb „keine Änderung", obwohl die
+  // Schrift korrekt geladen und gerendert war.
+  const widthOf = () =>
+    page.evaluate(() => document.getElementById("type-probe").getBoundingClientRect().width);
+
+  for (const [value, family] of [
+    ["readable", "Atkinson Hyperlegible"],
+    ["dyslexic", "OpenDyslexic"],
+  ]) {
+    await reset(page);
+    const heightBefore = await widthOf();
+    await setSetting(page, "font", value);
+    const loaded = await page.evaluate(async (f) => {
+      await document.fonts.ready;
+      return document.fonts.check(`16px "${f}"`);
+    }, family);
+    ok(`Schrift „${family}“ ist wirklich geladen`, loaded);
+    ok(
+      `… und ${family} wird wirklich gerendert`,
+      Math.abs((await widthOf()) - heightBefore) > 0.5,
+      `Messstrecke ${heightBefore.toFixed(1)}px → ${(await widthOf()).toFixed(1)}px`,
+    );
+  }
   await reset(page);
 
   // --- 5. Farbmodi: gemessenes Kontrastverhältnis ------------------------
