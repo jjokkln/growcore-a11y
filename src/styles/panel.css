@@ -118,6 +118,17 @@
   max-height: min(34rem, calc(100dvh - 6rem));
   overflow-y: auto;
   overscroll-behavior: contain;
+  /*
+   * Die Kopfzeile klebt oben. Ohne `scroll-padding-block-start` landet ein
+   * Bedienelement, zu dem der Browser scrollt (Tastaturfokus oder
+   * `scrollIntoView`), UNTER der Kopfzeile — verdeckt, und ein Klick trifft die
+   * Kopfzeile statt das Element. Bei der Abnahme mit Playwright war das
+   * reproduzierbar: „<div class=gc-a11y-head> intercepts pointer events". Für
+   * Tastaturnutzer ist es derselbe Fehler, nur ohne Fehlermeldung.
+   *
+   * Der Wert entspricht der Höhe der Kopfzeile plus Luft.
+   */
+  scroll-padding-block-start: 4.5rem;
   margin: 0;
   padding: 0;
   border: 1px solid var(--gc-a11y-line);
