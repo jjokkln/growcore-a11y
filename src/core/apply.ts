@@ -1,4 +1,5 @@
 import { ACTIVE_ATTR, SCHEMA } from "./schema.js";
+import { syncOverlays } from "./overlays.js";
 import { projectToDom } from "./project.js";
 import { DEFAULTS, type A11ySettings } from "./settings.js";
 
@@ -19,6 +20,10 @@ export function applySettings(
 ): void {
   if (!root) return;
   projectToDom(root, settings as unknown as Record<string, unknown>, SCHEMA, ACTIVE_ATTR);
+  // Lesemaske und Leselineal brauchen eine Position, die kein CSS liefern kann.
+  // Bewusst HIER und nicht beim Aufrufer: sonst vergisst es irgendwann jemand,
+  // und die Maske verdunkelt die Seite ohne Fenster.
+  syncOverlays(root);
 }
 
 /** Alles zurück auf Standard — im DOM, nicht im Speicher (das macht der Aufrufer). */

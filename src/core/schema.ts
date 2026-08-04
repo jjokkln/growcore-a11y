@@ -13,14 +13,13 @@
  * stattdessen dieselbe Funktion einmal aufgerufen und einmal per `toString()`
  * ins Skript geschrieben, mit dem Schema als JSON-Argument.
  *
- * Vier Projektionsarten, mehr braucht es nicht:
+ * Drei Projektionsarten, mehr braucht es nicht:
  *
  *   enum   Auswahl aus festen Werten. Der ERSTE Wert ist der Standard und wird
  *          nie ins DOM geschrieben — `[data-a11y-*]` bedeutet damit immer
  *          "vom Standard abweichend", was die CSS-Selektoren kurz hält.
  *   step   Ganzzahlige Stufe 0..max. 0 ist der Standard. Optional mit einer
  *          CSS-Variablen, die je Stufe einen eigenen Wert bekommt (`varValues`).
- *   range  Stetiger Wert, landet nur in einer CSS-Variablen, nie als Attribut.
  *   flag   An/Aus. Vorhandensein des Attributs ist "an".
  */
 
@@ -33,7 +32,6 @@ export const TEXT_SCALES = [1, 1.125, 1.25, 1.5, 1.75] as const;
 export type SchemaEntry =
   | { kind: "enum"; attr: string; values: readonly string[] }
   | { kind: "step"; attr: string; max: number; cssVar?: string; varValues?: readonly number[] }
-  | { kind: "range"; cssVar: string; min: number; max: number; fallback: number; scale?: number }
   | { kind: "flag"; attr: string };
 
 export const SCHEMA = {
@@ -69,14 +67,20 @@ export const SCHEMA = {
     values: ["default", "low", "high", "grayscale"],
   },
   cvd: { kind: "enum", attr: "data-a11y-cvd", values: ["none", "protan", "deutan", "tritan"] },
-  cvdStrength: {
-    kind: "range",
-    cssVar: "--a11y-cvd-strength",
-    min: 0,
-    max: 100,
-    fallback: 100,
-    scale: 0.01, // Prozent -> 0..1 fuer die feColorMatrix-Interpolation
-  },
+  /**
+   * Stufe statt stufenlosem Regler, und das ist eine technische Notwendigkeit:
+   * `values` an einem <feColorMatrix> ist ein SVG-Attribut, keine
+   * CSS-Eigenschaft — es kann also keine CSS-Variable lesen. Ein stufenloser
+   * Regler bräuchte JavaScript, das die Matrix zur Laufzeit einträgt, und das
+   * liefe erst nach der Hydration: sichtbarer Farbsprung bei jedem Seitenaufruf.
+   * Vier vorgerechnete Matrizen je Typ sind deklarativ und flackerfrei
+   * (`cvd-filters.ts`, erzeugt von `tools/generate-cvd-filters.mjs`).
+   *
+   * Stufe 0 = volle Korrektur = Standard. Anomalien (Deuteranomalie ist weit
+   * häufiger als echte Dichromasie) kommen mit einer schwächeren Stufe oft besser
+   * zurecht, deshalb gibt es die Abstufung überhaupt.
+   */
+  cvdStrength: { kind: "step", attr: "data-a11y-cvd-strength", max: 3 },
   blueLight: {
     kind: "step",
     attr: "data-a11y-blue",

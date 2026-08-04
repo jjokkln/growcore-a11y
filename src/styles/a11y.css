@@ -1,0 +1,628 @@
+/*
+ * ============================================================================
+ * a11y.css — alle Effekte des Barrierefreiheits-Panels
+ * ============================================================================
+ *
+ * Alles hängt an Attributen und CSS-Variablen auf <html>, die der Kern setzt
+ * (src/core/project.ts). Ein Attribut ist immer nur dann da, wenn die
+ * Einstellung VOM STANDARD ABWEICHT — deshalb genügt hier durchgehend
+ * `html[data-a11y-…]` ohne Wertvergleich auf den Standardfall.
+ *
+ * Drei Dinge, die beim Lesen sofort erklärt sein sollen:
+ *
+ * 1. `!important` ist hier RICHTIG, nicht faul. Das sind
+ *    Nutzerpräferenzen, die Autoren-Styles überstimmen müssen — genau der Fall,
+ *    für den die Kaskade das Werkzeug vorsieht. Eine Schriftvergrößerung, die
+ *    an einer beliebigen `line-height: 1.2`-Regel im Projekt scheitert, ist
+ *    keine.
+ *
+ * 2. Farbmodi sind TOKEN-OVERRIDES, kein `filter: invert()`. Gründe: (a) ein
+ *    Filter macht Fotos zu Negativen, (b) ein Vorfahren-Filter färbt in Firefox
+ *    auch Elemente im Top Layer mit, das Panel würde also mit-invertieren
+ *    (gemessen 04.08.2026, siehe test/browser/). Echtes `filter` benutzen nur
+ *    Graustufen, Sättigung und die Farbfehlsicht-Korrektur.
+ *
+ * 3. Es gibt KEINE Ausnahme für das Panel selbst. Das ist Absicht: wer 175 %
+ *    Schrift braucht, braucht sie auch im Panel, und wer Graustufen einschaltet,
+ *    will keine farbige Insel. Nur bei „Bilder ausblenden" ist das Panel außen
+ *    vor, weil seine Symbole Inline-SVG mit `currentColor` sind und die Regel
+ *    ausschließlich auf ersetzte Elemente zielt.
+ *
+ * Reihenfolge der Abschnitte: Text · Farbe · Filter · Medien · Lesehilfen.
+ * ============================================================================
+ */
+
+/* ============================================================================
+ * 1 — TEXT
+ * ========================================================================= */
+
+/*
+ * Schriftgröße über die Wurzel-Schriftgröße, nicht über eine Liste von Klassen.
+ *
+ * Warum: Eine `rem`-basierte Type-Scale wächst damit vollständig mit, und zwar
+ * auch die Tailwind-Klassen (`text-sm` = 0.875rem), ohne dass irgendwo eine
+ * Liste gepflegt werden muss. Der Preis ist bekannt und gewollt: `rem`-Abstände
+ * wachsen ebenfalls, das Layout „zoomt". Auf Fließtext-Seiten ist das genau das
+ * richtige Verhalten; bei Flächen mit `height: 100dvh; overflow: hidden` muss es
+ * bei 175 % gegengeprüft werden.
+ *
+ * `calc(100% * …)` und nicht `16px * …`: 100 % ist die vom Nutzer im Browser
+ * eingestellte Schriftgröße. Ein fester Pixelwert würde die überschreiben — also
+ * genau die Einstellung wegwerfen, die ein sehbehinderter Nutzer längst gemacht
+ * hat.
+ */
+html {
+  font-size: calc(100% * var(--a11y-text-scale, 1));
+}
+
+/*
+ * Zeilenhöhe und Laufweite nach WCAG 1.4.12 (Text Spacing): Zeilenhöhe
+ * mindestens 1.5×, Buchstabenabstand 0.12em, Wortabstand 0.16em. Die Stufe
+ * „relaxed" trifft den Normwert, „loose" geht darüber.
+ *
+ * Bewusst NICHT auf `*`: eine Zeilenhöhe von 1.8 auf einer Überschrift oder in
+ * einem Button sieht kaputt aus und verschiebt Layouts ohne Nutzen. Die Liste
+ * ist die der Elemente, in denen wirklich gelesen wird.
+ */
+html[data-a11y-leading="relaxed"] {
+  --a11y-leading: 1.6;
+}
+html[data-a11y-leading="loose"] {
+  --a11y-leading: 1.9;
+}
+html[data-a11y-leading] :is(p, li, dd, dt, blockquote, figcaption, td, th, label, summary) {
+  line-height: var(--a11y-leading) !important;
+}
+/* Absatzabstand geht mit — WCAG verlangt 2× Schriftgröße. */
+html[data-a11y-leading] :is(p, blockquote, figcaption) {
+  margin-block-end: max(1em, 0.5rem) !important;
+}
+
+html[data-a11y-tracking="wide"] {
+  --a11y-tracking: 0.06em;
+  --a11y-word-spacing: 0.08em;
+}
+html[data-a11y-tracking="wider"] {
+  --a11y-tracking: 0.12em;
+  --a11y-word-spacing: 0.16em;
+}
+html[data-a11y-tracking] :is(p, li, dd, dt, blockquote, figcaption, td, th, label, summary, h1, h2, h3, h4, h5, h6, a, button) {
+  letter-spacing: var(--a11y-tracking) !important;
+  word-spacing: var(--a11y-word-spacing) !important;
+}
+
+/*
+ * Blocksatz aufheben. `start` statt `left`, damit es in einer rechtsläufigen
+ * Sprache nicht das Gegenteil bewirkt. Automatische Silbentrennung geht mit weg:
+ * sie ist der zweite Grund für zerrissene Wortabstände.
+ */
+html[data-a11y-align="left"] :is(p, li, dd, blockquote, figcaption, td, th, h1, h2, h3, h4, h5, h6) {
+  text-align: start !important;
+  hyphens: manual !important;
+  text-wrap: pretty;
+}
+
+/*
+ * Schriftart. Beide Dateien liegen im Paket unter fonts/ und werden selbst
+ * gehostet — nie über einen Google-Fonts-Link, der die IP jedes Besuchers an
+ * Google schickt (die meistabgemahnte DSGVO-Feststellung auf deutschen Seiten).
+ * Die @font-face-Regeln stehen in fonts.css, damit ein Projekt sie einzeln
+ * einbinden oder durch eigene ersetzen kann.
+ *
+ * Zur Einordnung von OpenDyslexic, damit hier niemand mehr verspricht als
+ * belegt ist: Die Studienlage stützt NICHT, dass die Schrift die Leseleistung
+ * bei Legasthenie messbar verbessert. Was belegt ist, ist die Präferenz — viele
+ * Betroffene lesen lieber damit, und Präferenz ist bei einem freiwilligen
+ * Schalter ein ausreichender Grund. „Gut lesbar" (Atkinson Hyperlegible, für
+ * Sehbehinderung entwickelt, unterscheidbare Buchstabenformen) ist die Stufe
+ * mit der besseren Begründung und steht deshalb zuerst.
+ */
+html[data-a11y-font="readable"] {
+  --a11y-font: "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+html[data-a11y-font="dyslexic"] {
+  --a11y-font: "OpenDyslexic", Verdana, system-ui, sans-serif;
+}
+html[data-a11y-font] :not(pre, code, kbd, samp, pre *, code *) {
+  font-family: var(--a11y-font) !important;
+}
+
+/* ============================================================================
+ * 2 — FARBE (Token-Override)
+ * ========================================================================= */
+
+/*
+ * Diese Blöcke überschreiben die Design-Token des Projekts. Die Namen sind die
+ * des shadcn/Tailwind-Standards, weil das der GrowCore-Stack ist — ein Projekt
+ * mit anderen Namen ergänzt seine eigenen in einer Projektdatei, das Muster
+ * bleibt gleich.
+ *
+ * Warum Token und nicht `filter: invert()`: Bei einem Filter werden Fotos zu
+ * Negativen und Text zu Farbmatsch. Ein Token-Override lässt Bilder in Ruhe und
+ * ändert genau das, was Bedeutung trägt.
+ *
+ * Die Werte sind keine Geschmacksfrage. Hochkontrast heißt 21:1 für Fließtext
+ * (Schwarz auf Weiß bzw. umgekehrt) — deutlich über den 4.5:1 aus WCAG 1.4.3,
+ * denn wer diesen Schalter braucht, kommt mit dem Mindestwert nicht aus.
+ * Linkfarben: `#0000EE` auf Weiß (8.6:1) und Gelb auf Schwarz (19.6:1) sind die
+ * Browser- bzw. Windows-Hochkontrast-Konventionen — hier absichtlich nicht
+ * „schöner" gemacht, weil Wiedererkennbarkeit der Zweck ist.
+ */
+
+/* --- Hochkontrast hell ---------------------------------------------------- */
+html[data-a11y-color="contrast-light"] {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff;
+  --secondary-foreground: #000000;
+  --muted: #f0f0f0;
+  --muted-foreground: #000000;
+  --accent: #f0f0f0;
+  --accent-foreground: #000000;
+  --border: #000000;
+  --input: #000000;
+  --ring: #0000ee;
+  --destructive: #b30000;
+  --success: #005c1f;
+  --warning: #6b4400;
+  --info: #00308f;
+  --review: #5c0080;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-border: #000000;
+  --sidebar-accent: #f0f0f0;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #0000ee;
+  --a11y-link: #0000ee;
+  --a11y-link-visited: #551a8b;
+}
+
+/* --- Hochkontrast dunkel -------------------------------------------------- */
+html[data-a11y-color="contrast-dark"] {
+  color-scheme: dark;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #000000;
+  --card-foreground: #ffffff;
+  --popover: #000000;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #000000;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #ffffff;
+  --accent: #1a1a1a;
+  --accent-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffff00;
+  --destructive: #ff6b6b;
+  --success: #4ee88a;
+  --warning: #ffd24d;
+  --info: #7ab8ff;
+  --review: #e0a3ff;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-border: #ffffff;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-ring: #ffff00;
+  --a11y-link: #ffff00;
+  --a11y-link-visited: #ffc0ff;
+}
+
+/* --- Invertiert ------------------------------------------------------------
+ * Nicht dasselbe wie Hochkontrast dunkel: hier bleiben die Abstufungen
+ * erhalten (gedämpfte Flächen bleiben gedämpft), nur die Helligkeitsachse
+ * kippt. Für Menschen, die helle Flächen nicht vertragen, aber auf einer
+ * strukturierten Oberfläche arbeiten wollen.
+ */
+html[data-a11y-color="invert"] {
+  color-scheme: dark;
+  --background: #10100f;
+  --foreground: #f2f2f0;
+  --card: #1a1a19;
+  --card-foreground: #f2f2f0;
+  --popover: #1a1a19;
+  --popover-foreground: #f2f2f0;
+  --secondary: #24241f;
+  --secondary-foreground: #f2f2f0;
+  --muted: #24241f;
+  --muted-foreground: #b8b8b2;
+  --accent: #2e2e28;
+  --accent-foreground: #f2f2f0;
+  --border: #3a3a34;
+  --input: #3a3a34;
+  --sidebar: #161615;
+  --sidebar-foreground: #f2f2f0;
+  --sidebar-border: #3a3a34;
+  --sidebar-accent: #24241f;
+  --sidebar-accent-foreground: #f2f2f0;
+}
+
+/* --- Nachtmodus -----------------------------------------------------------
+ * Dunkel PLUS warm PLUS entsättigt. Der warme Anteil kommt aus derselben
+ * Tönungsfläche wie der Blaulichtfilter (Abschnitt 3), damit es nur einen
+ * Mechanismus gibt.
+ */
+html[data-a11y-color="night"] {
+  color-scheme: dark;
+  --background: #14120e;
+  --foreground: #ece5d8;
+  --card: #1c1a14;
+  --card-foreground: #ece5d8;
+  --popover: #1c1a14;
+  --popover-foreground: #ece5d8;
+  --secondary: #262218;
+  --secondary-foreground: #ece5d8;
+  --muted: #262218;
+  --muted-foreground: #b5ab97;
+  --accent: #2f2a1e;
+  --accent-foreground: #ece5d8;
+  --border: #3d3628;
+  --input: #3d3628;
+  --sidebar: #181510;
+  --sidebar-foreground: #ece5d8;
+  --sidebar-border: #3d3628;
+  --a11y-blue-strength: 0.12;
+  --a11y-filter-sat: saturate(0.8);
+}
+
+/*
+ * Rückfallebene für Seiten OHNE Token-System.
+ *
+ * Ehrlich benannt: Auf einer beliebigen Seite mit hart gesetzten Farben kann
+ * ein Stylesheet Hochkontrast nicht vollständig herstellen — jede Regel mit
+ * eigenem `background-color` bleibt stehen. Was hier passiert, ist deshalb das
+ * Minimum, das nie schadet: Wurzel und Body kippen mit, damit die Seite nicht
+ * halb umgestellt und dadurch unlesbar wird. Ein Projekt ohne Token braucht
+ * einen eigenen kleinen Block; die Vorlage dafür steht in der README.
+ */
+html:is([data-a11y-color="contrast-light"], [data-a11y-color="contrast-dark"], [data-a11y-color="invert"], [data-a11y-color="night"]) {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+html:is([data-a11y-color="contrast-light"], [data-a11y-color="contrast-dark"], [data-a11y-color="invert"], [data-a11y-color="night"]) body {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Linkfarbe nur dort, wo ein Modus sie definiert (die beiden Hochkontrast-Stufen). */
+html[data-a11y-color] a[href] {
+  color: var(--a11y-link, inherit);
+}
+html[data-a11y-color] a[href]:visited {
+  color: var(--a11y-link-visited, var(--a11y-link, inherit));
+}
+
+/* ============================================================================
+ * 3 — FILTER (Sättigung, Graustufen, Farbfehlsicht-Korrektur)
+ * ========================================================================= */
+
+/*
+ * Gemessen und deshalb unbedenklich: `filter` auf dem WURZELELEMENT erzeugt
+ * keinen Containing Block für `position: fixed` — die Ausnahme aus Filter
+ * Effects L2 greift in chromium, firefox UND webkit (test/browser/, 04.08.2026).
+ * Auf einem Wrapper-DIV wäre genau das der Fall und würde jede fixierte
+ * Kopfzeile, Sidebar und jedes Portal beim Scrollen mitreißen.
+ *
+ * Der Trick mit den zwei Variablen: Sättigung und Farbkorrektur sind
+ * unabhängig kombinierbar, aber `filter` ist eine einzige Eigenschaft — zwei
+ * Deklarationen würden sich überschreiben statt zu addieren. `var(--x, )` mit
+ * LEERER Rückfallebene ist gültiges CSS und löst sich zu nichts auf, wenn die
+ * Variable nicht gesetzt ist. Damit steht hier eine Deklaration, die beides
+ * zusammensetzt.
+ */
+html[data-a11y-saturation="low"] {
+  --a11y-filter-sat: saturate(0.55);
+}
+html[data-a11y-saturation="high"] {
+  --a11y-filter-sat: saturate(1.55);
+}
+html[data-a11y-saturation="grayscale"] {
+  --a11y-filter-sat: grayscale(1);
+}
+
+/*
+ * Farbfehlsicht-Korrektur. Die Matrizen stehen in vier vorgerechneten Stufen im
+ * SVG (src/core/cvd-filters.ts, erzeugt aus tools/generate-cvd-filters.mjs) —
+ * ein `values`-Attribut kann keine CSS-Variable lesen, deshalb Stufen statt
+ * Regler. Ohne Stärke-Attribut gilt die volle Korrektur.
+ *
+ * Die Verweise müssen als `url("#…")` mit Anführungszeichen stehen: ohne sie
+ * behandeln manche Bundler die Referenz als aufzulösenden Dateipfad und
+ * schreiben sie um.
+ */
+html[data-a11y-cvd="protan"] {
+  --a11y-filter-cvd: url("#gc-a11y-protan");
+}
+html[data-a11y-cvd="protan"][data-a11y-cvd-strength="1"] {
+  --a11y-filter-cvd: url("#gc-a11y-protan-1");
+}
+html[data-a11y-cvd="protan"][data-a11y-cvd-strength="2"] {
+  --a11y-filter-cvd: url("#gc-a11y-protan-2");
+}
+html[data-a11y-cvd="protan"][data-a11y-cvd-strength="3"] {
+  --a11y-filter-cvd: url("#gc-a11y-protan-3");
+}
+
+html[data-a11y-cvd="deutan"] {
+  --a11y-filter-cvd: url("#gc-a11y-deutan");
+}
+html[data-a11y-cvd="deutan"][data-a11y-cvd-strength="1"] {
+  --a11y-filter-cvd: url("#gc-a11y-deutan-1");
+}
+html[data-a11y-cvd="deutan"][data-a11y-cvd-strength="2"] {
+  --a11y-filter-cvd: url("#gc-a11y-deutan-2");
+}
+html[data-a11y-cvd="deutan"][data-a11y-cvd-strength="3"] {
+  --a11y-filter-cvd: url("#gc-a11y-deutan-3");
+}
+
+html[data-a11y-cvd="tritan"] {
+  --a11y-filter-cvd: url("#gc-a11y-tritan");
+}
+html[data-a11y-cvd="tritan"][data-a11y-cvd-strength="1"] {
+  --a11y-filter-cvd: url("#gc-a11y-tritan-1");
+}
+html[data-a11y-cvd="tritan"][data-a11y-cvd-strength="2"] {
+  --a11y-filter-cvd: url("#gc-a11y-tritan-2");
+}
+html[data-a11y-cvd="tritan"][data-a11y-cvd-strength="3"] {
+  --a11y-filter-cvd: url("#gc-a11y-tritan-3");
+}
+
+html:is([data-a11y-saturation], [data-a11y-cvd], [data-a11y-color="night"]) {
+  filter: var(--a11y-filter-cvd, ) var(--a11y-filter-sat, );
+}
+
+/*
+ * Firefox kann die Farbfehlsicht-Korrektur nicht — gemessen am 04.08.2026 über
+ * alle drei Engines, und zwar erschöpfend:
+ *
+ *   filter: url(#f) auf <html>          chromium ✔  webkit ✔  firefox ✘
+ *     (alle fünf Schreibweisen geprüft: direkt, in Anführungszeichen, über
+ *      var(), über var() mit Anführungszeichen, zusammengesetzt — keine wirkt)
+ *   dasselbe auf einem <div>            überall ✔  → es ist die Wurzel, nicht die Syntax
+ *   filter: url(#f) auf <body>          überall ✔, aber position: fixed bricht
+ *     in ALLEN drei Engines (Sidebar, Kopfzeile, Portale scrollen mit) — die
+ *     Wurzel-Ausnahme aus Filter Effects L2 gilt eben nur für die Wurzel
+ *   backdrop-filter: url(#f) auf einer festen Fläche
+ *     nur chromium ✔; firefox und webkit melden CSS.supports = true und tun
+ *     dann nichts. Ein `supports`-Ja ist hier also keine Zusage.
+ *
+ * Es gibt damit keinen Weg, die Korrektur in Firefox anzubieten, ohne jedes
+ * fixierte Element der Seite zu opfern. Deshalb wird sie dort **abgeschaltet**
+ * statt sichtbar wirkungslos angeboten: eine Einstellung, die sich umlegen lässt
+ * und nichts tut, ist schlimmer als eine, die ehrlich fehlt.
+ *
+ * `-moz-orient` als Erkennungsmerkmal, weil es (gemessen) genau in Firefox
+ * unterstützt wird und eine CSS-Eigenschaft ist — dieselbe Abfrage funktioniert
+ * damit hier UND in JavaScript (`isCvdCorrectionSupported()`), ohne den
+ * User-Agent zu lesen. Fällt die Eigenschaft irgendwann aus Firefox heraus,
+ * greift die Sperre nicht mehr und die Option erscheint wirkungslos — also
+ * derselbe Zustand wie ohne Sperre, kein schlimmerer.
+ *
+ * Die Sättigung bleibt unberührt: CSS-Filterfunktionen wirken auf <html> auch in
+ * Firefox einwandfrei.
+ */
+@supports (-moz-orient: inline) {
+  html[data-a11y-cvd] {
+    --a11y-filter-cvd: ;
+  }
+}
+
+/*
+ * Blaulichtfilter — eine Tönungsfläche über allem, ohne DOM-Eingriff.
+ *
+ * `html::after` und nicht ein eingefügtes <div>: ein zusätzliches Kind im Body
+ * kollidiert mit React (siehe das Streaming-Problem in
+ * growcore-kundendashboard/context/troubleshooting.md), ein Pseudoelement der
+ * Wurzel nicht. `body::after` wäre riskanter, weil Projekte das oft selbst
+ * benutzen; `html::after` praktisch nie.
+ *
+ * `mix-blend-mode: multiply` statt einer halbtransparenten Fläche: Multiplizieren
+ * verschiebt den Weißpunkt ins Warme, ohne die Seite grau zuzuziehen. Eine
+ * einfache `rgba()`-Fläche würde Schwarz aufhellen und den Kontrast senken —
+ * das Gegenteil des Zwecks.
+ *
+ * Das Panel liegt im Top Layer und damit ÜBER dieser Fläche. Das ist gewollt:
+ * die Bedienoberfläche des Filters soll nicht selbst durch ihn hindurch
+ * gelesen werden müssen.
+ */
+html:is([data-a11y-blue], [data-a11y-color="night"])::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  pointer-events: none;
+  background-color: #ff9b34;
+  opacity: var(--a11y-blue-strength, 0);
+  mix-blend-mode: multiply;
+}
+
+/* ============================================================================
+ * 4 — MEDIEN
+ * ========================================================================= */
+
+/*
+ * Bilder ausblenden, aber den Platz behalten.
+ *
+ * `content: url(<leeres SVG>)` ersetzt den Bildinhalt eines <img> — anders als
+ * `opacity: 0`, das auch Rahmen und Hintergrund des Ersatzkastens verschluckt.
+ * Der Kasten bleibt sichtbar und schraffiert, damit erkennbar ist, DASS hier
+ * etwas ausgeblendet ist; ein einfach verschwundenes Bild sieht wie ein
+ * Ladefehler aus.
+ *
+ * <video>, <iframe>, <object>, <embed> sind nicht auf dieselbe Weise
+ * ersetzbar — die werden nur versteckt, ohne Platzhalter. Bewusst so
+ * dokumentiert statt schlecht nachgebaut.
+ *
+ * Inline-SVG ist ABSICHTLICH nicht dabei: darüber laufen Symbole und Logos, und
+ * eine Oberfläche ohne Symbole ist unbenutzbar, nicht barrierearm.
+ */
+html[data-a11y-hide-images] img {
+  content: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E") !important;
+  background-color: color-mix(in oklab, currentColor 10%, transparent);
+  background-image: repeating-linear-gradient(
+    45deg,
+    color-mix(in oklab, currentColor 18%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+  outline: 1px dashed color-mix(in oklab, currentColor 45%, transparent);
+  outline-offset: -1px;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+}
+html[data-a11y-hide-images] :is(video, iframe, object, embed) {
+  visibility: hidden !important;
+}
+
+/*
+ * Animationen stoppen. Dieselbe Rezeptur wie der `prefers-reduced-motion`-Block,
+ * den ein gut gebautes Projekt schon hat — hier als bewusst schaltbare Fassung,
+ * weil das Systemsignal auf einem fremden Rechner nicht immer gesetzt ist.
+ *
+ * `0.01ms` und nicht `0s`: Animationen mit `animationend`-Handler würden bei
+ * Dauer 0 in manchen Engines nie feuern, und dann bleibt eine Oberfläche
+ * hängen, die auf das Ereignis wartet. So laufen sie zu Ende, nur unsichtbar
+ * schnell.
+ */
+html[data-a11y-stop-animations] *,
+html[data-a11y-stop-animations] *::before,
+html[data-a11y-stop-animations] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
+}
+html[data-a11y-stop-animations] {
+  scroll-behavior: auto !important;
+}
+
+/* ============================================================================
+ * 5 — LESEHILFEN
+ * ========================================================================= */
+
+/*
+ * Links hervorheben. Unterstreichung UND Rahmen, weil Farbe allein nach
+ * WCAG 1.4.1 kein zulässiges Unterscheidungsmerkmal ist — und weil genau dieser
+ * Schalter von Menschen benutzt wird, die Farben nicht unterscheiden.
+ */
+html[data-a11y-highlight-links] a[href] {
+  text-decoration: underline !important;
+  text-decoration-thickness: 0.12em !important;
+  text-underline-offset: 0.18em !important;
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* Ein Link, der nur ein Bild enthält, braucht den Rahmen statt der Linie. */
+html[data-a11y-highlight-links] a[href]:has(> img:only-child) {
+  text-decoration: none !important;
+  outline-width: 2px;
+}
+
+/*
+ * Fokus verstärken. Der Standardring vieler Designs ist 1 px und in der
+ * Markenfarbe — für Tastaturnutzer mit eingeschränktem Sehvermögen zu wenig.
+ * Zwei Ringe in Gegenfarben, damit er auf hellem UND dunklem Grund trägt; das
+ * ist dieselbe Technik wie beim Windows-Fokusindikator.
+ */
+html[data-a11y-focus-boost] :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #ffff00 !important;
+  outline-offset: 2px !important;
+  box-shadow:
+    0 0 0 6px #000000,
+    0 0 0 8px #ffffff !important;
+  border-radius: 2px;
+}
+
+/*
+ * Großer Cursor. Der Pfeil ist Inline-SVG als data-URI, damit keine zweite
+ * Datei nötig ist. Weiß mit schwarzer Kontur, weil ein einfarbiger Cursor auf
+ * halber Strecke unsichtbar wird.
+ *
+ * 48 px ist bewusst nicht größer: Browser verwerfen Cursor über 128 px
+ * vollständig (Schutz gegen Cursor-Spoofing), und einige begrenzen deutlich
+ * früher. Ein zu großer Wert liefert also GAR keinen Cursor. `, auto` am Ende
+ * ist die Rückfallebene, falls das Bild verworfen wird.
+ */
+html[data-a11y-big-cursor],
+html[data-a11y-big-cursor] * {
+  cursor: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M3%201.5L3%2020.5L8.4%2015.4L11.8%2022.5L14.9%2021L11.5%2014.2L18.5%2014.2Z%22%20fill%3D%22%23fff%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.4%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E")
+      2 2,
+    auto !important;
+}
+/* Textfelder behalten den Text-Cursor — sonst weiß niemand mehr, wo getippt wird. */
+html[data-a11y-big-cursor] :is(input, textarea, [contenteditable]) {
+  cursor: text !important;
+}
+
+/*
+ * Lesemaske und Leselineal.
+ *
+ * Beide arbeiten mit `html::before` und einem Farbverlauf mit harten Stopps um
+ * `--a11y-mask-y` — die Position schreibt `overlays.ts` bei Zeiger- UND
+ * Fokusbewegung. Wieder ein Pseudoelement statt eines eingefügten Knotens, aus
+ * demselben Grund wie beim Blaulichtfilter.
+ *
+ * Sie schließen sich gegenseitig aus (die Maske gewinnt), weil zwei
+ * Verlaufsflächen auf demselben Pseudoelement nicht koexistieren. Das Panel
+ * verhindert die Kombination ohnehin.
+ *
+ * Der Startwert `50vh` ist wichtig: ohne ihn läge die Maske vor dem ersten
+ * Mauszeigerereignis bei 0 und würde die Seite komplett abdunkeln.
+ */
+html:is([data-a11y-reading-mask], [data-a11y-reading-ruler])::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483645;
+  pointer-events: none;
+}
+
+html[data-a11y-reading-mask]::before {
+  --a11y-band: 3.5rem;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.72) 0,
+    rgb(0 0 0 / 0.72) calc(var(--a11y-mask-y, 50vh) - var(--a11y-band)),
+    transparent calc(var(--a11y-mask-y, 50vh) - var(--a11y-band)),
+    transparent calc(var(--a11y-mask-y, 50vh) + var(--a11y-band)),
+    rgb(0 0 0 / 0.72) calc(var(--a11y-mask-y, 50vh) + var(--a11y-band))
+  );
+}
+
+html[data-a11y-reading-ruler]::before {
+  --a11y-rule: 0.25rem;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--a11y-mask-y, 50vh) - var(--a11y-rule)),
+    #ff2d55 calc(var(--a11y-mask-y, 50vh) - var(--a11y-rule)),
+    #ff2d55 calc(var(--a11y-mask-y, 50vh) + var(--a11y-rule)),
+    transparent calc(var(--a11y-mask-y, 50vh) + var(--a11y-rule))
+  );
+}
+
+/*
+ * Wenn der Nutzer weniger Bewegung will, folgen Maske und Lineal dem Zeiger
+ * ohne Weichzeichnung — `overlays.ts` schaltet die Interpolation dann ab. Hier
+ * nur der Vollständigkeit halber dokumentiert; CSS-seitig gibt es nichts zu tun,
+ * weil bewusst keine Transition auf der Position liegt. Eine nachlaufende
+ * Lesemaske wäre für genau die Zielgruppe ein Ärgernis.
+ */

@@ -31,14 +31,18 @@ test("Stufe setzt Attribut UND die zugehörige CSS-Variable", () => {
   assert.equal(blue.props.get("--a11y-blue-strength"), "0.16");
 });
 
-test("Bereich landet nur als CSS-Variable und wird skaliert", () => {
-  const el = project({ cvd: "deutan", cvdStrength: 60 });
-  assert.equal(el.attrs.get("data-a11y-cvd"), "deutan");
-  assert.equal(el.props.get("--a11y-cvd-strength"), "0.6", "Prozent werden zu 0..1");
-  assert.equal(el.attrs.has("data-a11y-cvdStrength"), false, "Bereiche bekommen kein Attribut");
-  // Auf dem Rückfallwert wird nichts geschrieben, damit das CSS seinen eigenen
-  // Standard (`var(..., 1)`) behalten kann.
-  assert.equal(project({ cvd: "deutan" }).props.has("--a11y-cvd-strength"), false);
+test("Korrekturstärke: volle Stufe schreibt kein Attribut, schwächere schon", () => {
+  // Volle Korrektur ist der Standardfall, also greift in a11y.css die Grundregel
+  // `html[data-a11y-cvd="deutan"]` und es braucht kein zweites Attribut.
+  const full = project({ cvd: "deutan" });
+  assert.equal(full.attrs.get("data-a11y-cvd"), "deutan");
+  assert.equal(full.attrs.has("data-a11y-cvd-strength"), false);
+
+  const weaker = project({ cvd: "deutan", cvdStrength: 2 });
+  assert.equal(weaker.attrs.get("data-a11y-cvd"), "deutan");
+  assert.equal(weaker.attrs.get("data-a11y-cvd-strength"), "2");
+  // Eine Stufe ohne varValues bekommt keine CSS-Variable.
+  assert.equal(weaker.props.size, 0);
 });
 
 test("Schalter schreiben ein leeres Attribut, aus entfernt es", () => {
@@ -81,7 +85,6 @@ test("Jeder Schema-Eintrag ist im DOM erreichbar", () => {
     let value;
     if (entry.kind === "enum") value = entry.values[1];
     else if (entry.kind === "step") value = entry.max;
-    else if (entry.kind === "range") value = entry.min;
     else value = true;
 
     const el = fakeElement();

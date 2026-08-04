@@ -75,6 +75,16 @@ gemessen (Skripte unter `test/browser/`):
 | --- | --- |
 | Bricht `filter` auf `<html>` `position: fixed`? | **Nein**, in allen drei Engines. Die Wurzel-Ausnahme aus Filter Effects L2 greift; Firefox-Bug 1125767 ist erledigt. Gegenprobe: derselbe Filter auf einem Wrapper-DIV bricht es reproduzierbar um genau die Scrollhöhe — der Test unterscheidet also. |
 | Entkommt ein Element im Top Layer (`popover`) dem Vorfahren-`filter`? | **Engine-abhängig.** chromium und webkit ja, **firefox nein**. Ein Gegenfilter wäre in zwei von drei Engines falsch, und die Unterscheidung ist per CSS nicht feststellbar. |
+| Wirkt `filter: url(#svg)` auf `<html>`? | **chromium ✔ · webkit ✔ · firefox ✘.** Fünf Schreibweisen geprüft (direkt, in Anführungszeichen, über `var()`, beides kombiniert, zusammengesetzt) — in Firefox wirkt keine. Auf einem `<div>` funktioniert es überall, es ist also die Wurzel und nicht die Syntax. |
+| Ausweg über `<body>` statt `<html>`? | Filter wirkt überall, **bricht aber `position: fixed` in allen drei Engines** — die Wurzel-Ausnahme gilt nur für die Wurzel. Damit unbrauchbar. |
+| Ausweg über `backdrop-filter: url()` auf einer festen Fläche? | Nur chromium. firefox und webkit melden `CSS.supports(…) === true` und tun dann nichts — ein `supports`-Ja ist hier keine Zusage. |
+
+**Folge:** Die Farbfehlsicht-Korrektur ist in Firefox **abgeschaltet**, nicht
+sichtbar wirkungslos. Erkannt wird das über `-moz-orient` (gemessen: nur Firefox),
+was als CSS-Eigenschaft in `a11y.css` **und** über `isCvdCorrectionSupported()`
+in JavaScript mit derselben Bedingung abfragbar ist — kein User-Agent-Test. Ein
+Schalter, der sich umlegen lässt und nichts tut, ist schlimmer als einer, der
+ehrlich fehlt.
 
 Folge: `invert` und die Hochkontrast-Modi laufen als **Token-Override**, nicht als
 CSS-Filter. Damit ist die Top-Layer-Frage gegenstandslos. Echtes `filter`
@@ -88,6 +98,19 @@ angeboten, weil er dort nur per Filter ginge und in Firefox anders aussähe.
 
 ```bash
 npm run typecheck   # tsc --noEmit
-npm test            # baut und führt die Unit-Tests aus
-npm run demo        # statische Demo-Seite, jede CSS-Regel isoliert
+npm test            # baut und führt die Unit-Tests aus (22)
+npm run demo        # Demo-Seite auf http://localhost:4173/demo/
+
+# Browser-Prüfungen (Playwright, geliehen aus growcore-kundendashboard)
+node tools/generate-cvd-filters.mjs        # Matrizen neu rechnen, 21 Prüfungen
+node test/browser/effects.mjs              # jede CSS-Regel, chromium
+ENGINES=all node test/browser/effects.mjs  # dieselben 106 Prüfungen ×3 Engines
 ```
+
+Die Prüfungen in `test/browser/effects.mjs` messen jeweils die Größe, um die es
+geht — Schriftgröße in Pixeln, Kontrastverhältnis, Pixelfarbe, Abstand zweier
+Verwechslungsfarben — und tragen wo möglich eine **Kontrollmessung** daneben, die
+belegt, dass die Messung überhaupt unterscheidet. Drei Fehler sind allein dadurch
+aufgefallen: ein von Hand geratenes „Verwechslungspaar", das keins war; Messpunkte
+außerhalb des Sichtbereichs, die als schwarze Fläche zurückkamen; und eine
+Kontrollmessung, die von der Phase einer Animation abhing.

@@ -15,11 +15,9 @@ type ValueOf<E> = E extends { kind: "enum"; values: readonly (infer V)[] }
   ? V
   : E extends { kind: "step" }
     ? number
-    : E extends { kind: "range" }
-      ? number
-      : E extends { kind: "flag" }
-        ? boolean
-        : never;
+    : E extends { kind: "flag" }
+      ? boolean
+      : never;
 
 export type A11ySettings = { [K in SettingName]: ValueOf<(typeof SCHEMA)[K]> };
 
@@ -32,8 +30,6 @@ function defaultFor(entry: SchemaEntry): string | number | boolean {
       return entry.values[0] as string;
     case "step":
       return 0;
-    case "range":
-      return entry.fallback;
     case "flag":
       return false;
   }
@@ -74,11 +70,6 @@ export function sanitize(raw: unknown): A11ySettings {
       case "step":
         if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= entry.max) {
           out[name] = value;
-        }
-        break;
-      case "range":
-        if (typeof value === "number" && Number.isFinite(value)) {
-          out[name] = Math.min(entry.max, Math.max(entry.min, Math.round(value)));
         }
         break;
       case "flag":

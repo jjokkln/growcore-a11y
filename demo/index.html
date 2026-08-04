@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>a11y.css — jede Regel isoliert</title>
+
+    <!--
+      Die Effektregeln selbst. Bewusst als einzige Stilquelle neben dem kleinen
+      Seiten-CSS unten: was hier nicht wirkt, wirkt auch im Projekt nicht.
+    -->
+    <link rel="stylesheet" href="/src/styles/a11y.css" />
+
+    <style>
+      /*
+        Token wie in einem echten GrowCore-Projekt (shadcn-Namen), damit die
+        Farbmodi etwas zu überschreiben haben. Ohne diese Ebene würde die
+        Demo-Seite die Token-Overrides gar nicht zeigen.
+      */
+      :root {
+        --background: #fbfbf9;
+        --foreground: #1c1c1a;
+        --card: #ffffff;
+        --card-foreground: #1c1c1a;
+        --muted: #f0f0ec;
+        --muted-foreground: #6b6b64;
+        --border: #dededa;
+        --primary: #00865a;
+        --primary-foreground: #ffffff;
+        --destructive: #c0392b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        /* Ausdrücklicher Ausgangswert: ohne ihn liefert `line-height` den
+           berechneten Wert "normal", der sich nicht vergleichen lässt — und
+           jedes echte Projekt setzt hier ohnehin etwas. */
+        line-height: 1.45;
+        font-family: system-ui, sans-serif;
+        background: var(--background);
+        color: var(--foreground);
+        display: grid;
+        grid-template-columns: 21rem 1fr;
+        min-height: 100vh;
+      }
+      /* Fixierte Leiste — sie ist gleichzeitig die Probe dafür, dass `filter`
+         auf <html> `position: fixed` nicht bricht. */
+      #panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 21rem;
+        overflow-y: auto;
+        padding: 1rem;
+        background: var(--card);
+        border-right: 1px solid var(--border);
+        font-size: 14px;
+      }
+      #content {
+        grid-column: 2;
+        padding: 2rem;
+        max-width: 46rem;
+      }
+      fieldset {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin: 0 0 0.75rem;
+        padding: 0.5rem 0.75rem 0.75rem;
+      }
+      legend {
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted-foreground);
+      }
+      label {
+        display: block;
+        margin: 0.35rem 0;
+      }
+      select {
+        width: 100%;
+        padding: 0.25rem;
+      }
+      .card {
+        background: var(--card);
+        color: var(--card-foreground);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+      }
+      .swatches {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .swatch-item {
+        margin: 0;
+        font-size: 11px;
+        text-align: center;
+      }
+      /* Bewusst OHNE Text in der Fläche: ein Farbfeld mit Beschriftung darin
+         lässt sich nicht als Farbe messen — der Mittelpunkt trifft dann die
+         Schrift, nicht die Farbe. */
+      .swatch {
+        width: 4.5rem;
+        height: 3rem;
+        border-radius: 6px;
+      }
+      button {
+        font: inherit;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      td,
+      th {
+        border: 1px solid var(--border);
+        padding: 0.4rem 0.6rem;
+        text-align: left;
+      }
+      .justified {
+        text-align: justify;
+        hyphens: auto;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.35);
+        }
+      }
+      #animated {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background: var(--primary);
+        animation: pulse 1.2s infinite;
+      }
+      #state {
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        color: var(--muted-foreground);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Die Filterdefinitionen. Im echten Projekt serverseitig gerendert. -->
+    <div id="svg-host" aria-hidden="true"></div>
+
+    <div id="panel">
+      <h2 style="margin-top: 0; font-size: 15px">Regeln schalten</h2>
+      <p style="font-size: 12px; color: var(--muted-foreground)">
+        Diese Leiste ist absichtlich hässlich und ungestylt — sie prüft
+        <code>a11y.css</code>, sie ist nicht das Panel.
+      </p>
+      <div id="controls"></div>
+      <fieldset>
+        <legend>Zustand auf &lt;html&gt;</legend>
+        <div id="state"></div>
+      </fieldset>
+      <button type="button" id="reset">Alles zurücksetzen</button>
+    </div>
+
+    <main id="content">
+      <h1>Erklärung zur Barrierefreiheit</h1>
+      <p>
+        Dieser Absatz ist normaler Fließtext. Er dient dazu, Schriftgröße,
+        Zeilenhöhe, Laufweite und Schriftart zu beurteilen — vier Einstellungen,
+        die man nur im Zusammenhang bewerten kann.
+      </p>
+      <p class="justified">
+        Dieser Absatz ist im <strong>Blocksatz</strong> gesetzt und hat
+        automatische Silbentrennung, damit die Einstellung „linksbündig
+        erzwingen" etwas zu tun hat. Blocksatz erzeugt in schmalen Spalten
+        Löcher zwischen den Wörtern, die für manche Menschen als senkrechte
+        Flüsse wahrgenommen werden und das Lesen erschweren.
+      </p>
+
+      <h2>Ein Abschnitt mit Auszeichnungen</h2>
+      <p>
+        Hier steht ein <a href="#eins">Link im Fließtext</a>, dazu ein
+        <a href="https://example.org">zweiter</a> und ein
+        <a href="#drei">dritter</a>, damit „Links hervorheben" beurteilbar ist.
+      </p>
+      <ul>
+        <li>Ein Listeneintrag.</li>
+        <li>Ein zweiter, etwas länger, damit die Zeilenhöhe wirkt.</li>
+      </ul>
+
+      <div class="card">
+        <h3 style="margin-top: 0">Eine Karte</h3>
+        <p style="color: var(--muted-foreground)">
+          Gedämpfter Nebentext auf einer Kartenfläche — das ist die Stelle, an
+          der ein Kontrastmodus zeigt, ob er die Token wirklich trifft.
+        </p>
+        <button type="button">Eine Schaltfläche</button>
+        <label style="margin-top: 0.5rem"
+          >Ein Eingabefeld
+          <input type="text" value="Text zum Prüfen des Cursors" />
+        </label>
+      </div>
+
+      <h2>Farben</h2>
+      <p>
+        Die beiden linken Felder sind ein <strong>Verwechslungspaar</strong> für
+        Rot-Grün-Schwäche: konstruiert, nicht ausgedacht. Mit aktiver Korrektur
+        müssen sie unterscheidbar werden.
+      </p>
+      <div class="swatches">
+        <!--
+          A und B sind das KONSTRUIERTE Verwechslungspaar für Deuteranopie:
+          im LMS-Raum unterscheiden sie sich ausschließlich im fehlenden
+          M-Kanal (Rechenweg in tools/generate-cvd-filters.mjs). Für
+          Normalsichtige liegen sie weit auseinander, für die betroffene Person
+          fallen sie zusammen — genau deshalb taugen sie als Probe.
+          Erster Entwurf hatte hier zwei von Hand gewählte Farben; die waren
+          kein Verwechslungspaar und die Messung dadurch wertlos.
+        -->
+        <figure class="swatch-item">
+          <div class="swatch" style="background: #fc88a8" id="confuse-a"></div>
+          <figcaption>A</figcaption>
+        </figure>
+        <figure class="swatch-item">
+          <div class="swatch" style="background: #63cba3" id="confuse-b"></div>
+          <figcaption>B</figcaption>
+        </figure>
+        <figure class="swatch-item">
+          <div class="swatch" style="background: #00865a" id="sw-green"></div>
+          <figcaption>Grün</figcaption>
+        </figure>
+        <figure class="swatch-item">
+          <div class="swatch" style="background: #c0392b"></div>
+          <figcaption>Rot</figcaption>
+        </figure>
+        <figure class="swatch-item">
+          <div class="swatch" style="background: #2b6cc0"></div>
+          <figcaption>Blau</figcaption>
+        </figure>
+        <figure class="swatch-item">
+          <div class="swatch" style="background: #808080" id="sw-gray"></div>
+          <figcaption>Grau</figcaption>
+        </figure>
+      </div>
+
+      <h2>Medien und Bewegung</h2>
+      <p>
+        Ein Bild mit Alt-Text (ausgeblendet muss der Kasten sichtbar bleiben),
+        daneben eine laufende Animation.
+      </p>
+      <div style="display: flex; gap: 1rem; align-items: center">
+        <img
+          id="demo-image"
+          width="160"
+          height="100"
+          alt="Ein Beispielbild"
+          src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22160%22%20height%3D%22100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%2300865a%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2228%22%20fill%3D%22%23e8c34a%22/%3E%3C/svg%3E"
+        />
+        <div id="animated"></div>
+      </div>
+
+      <h2>Eine Tabelle</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Einstellung</th>
+            <th>Wirkung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Schriftgröße</td>
+            <td>skaliert die Wurzel-Schriftgröße</td>
+          </tr>
+          <tr>
+            <td>Kontrast</td>
+            <td>überschreibt Design-Token</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top: 3rem">Ende des Inhalts.</p>
+      <p style="height: 60vh"></p>
+    </main>
+
+    <script type="module">
+      import {
+        SCHEMA,
+        DEFAULTS,
+        applySettings,
+        sanitize,
+        ensureCvdSvg,
+        isCvdCorrectionSupported,
+      } from "/dist/core/index.js";
+
+      ensureCvdSvg();
+
+      // Deutsche Beschriftungen nur für diese Demo — das echte Panel bringt
+      // seine eigenen mit.
+      const LABELS = {
+        textScale: "Schriftgröße (0–4)",
+        leading: "Zeilenhöhe",
+        tracking: "Laufweite",
+        align: "Ausrichtung",
+        font: "Schriftart",
+        color: "Farbmodus",
+        saturation: "Sättigung",
+        cvd: "Farbfehlsicht",
+        cvdStrength: "Korrekturstärke (0=voll)",
+        blueLight: "Blaulichtfilter (0–3)",
+        hideImages: "Bilder ausblenden",
+        stopAnimations: "Animationen stoppen",
+        readingMask: "Lesemaske",
+        readingRuler: "Leselineal",
+        bigCursor: "Großer Cursor",
+        highlightLinks: "Links hervorheben",
+        focusBoost: "Fokus verstärken",
+      };
+
+      let settings = { ...DEFAULTS };
+      const controls = document.getElementById("controls");
+
+      const groups = {
+        Text: ["textScale", "leading", "tracking", "align", "font"],
+        Farbe: ["color", "saturation", "cvd", "cvdStrength", "blueLight"],
+        Medien: ["hideImages", "stopAnimations"],
+        Lesehilfen: [
+          "readingMask",
+          "readingRuler",
+          "bigCursor",
+          "highlightLinks",
+          "focusBoost",
+        ],
+      };
+
+      for (const [group, names] of Object.entries(groups)) {
+        const fs = document.createElement("fieldset");
+        fs.innerHTML = `<legend>${group}</legend>`;
+        for (const name of names) {
+          const entry = SCHEMA[name];
+          const label = document.createElement("label");
+          const text = document.createTextNode(LABELS[name] + " ");
+          label.appendChild(text);
+
+          let input;
+          if (entry.kind === "flag") {
+            input = document.createElement("input");
+            input.type = "checkbox";
+            label.insertBefore(input, text);
+            input.addEventListener("change", () => set(name, input.checked));
+          } else if (entry.kind === "enum") {
+            input = document.createElement("select");
+            for (const v of entry.values) {
+              const o = document.createElement("option");
+              o.value = v;
+              o.textContent = v;
+              input.appendChild(o);
+            }
+            label.appendChild(input);
+            input.addEventListener("change", () => set(name, input.value));
+          } else {
+            input = document.createElement("select");
+            for (let i = 0; i <= entry.max; i++) {
+              const o = document.createElement("option");
+              o.value = String(i);
+              o.textContent = String(i);
+              input.appendChild(o);
+            }
+            label.appendChild(input);
+            input.addEventListener("change", () =>
+              set(name, Number(input.value)),
+            );
+          }
+          input.id = "ctl-" + name;
+          input.dataset.setting = name;
+          fs.appendChild(label);
+        }
+        controls.appendChild(fs);
+      }
+
+      function set(name, value) {
+        settings = sanitize({ ...settings, [name]: value });
+        render();
+      }
+
+      function render() {
+        applySettings(settings);
+        const el = document.documentElement;
+        const attrs = [...el.attributes]
+          .filter((a) => a.name.startsWith("data-a11y"))
+          .map((a) => (a.value ? `${a.name}="${a.value}"` : a.name));
+        const vars = ["--a11y-text-scale", "--a11y-blue-strength"]
+          .map((v) => [v, el.style.getPropertyValue(v)])
+          .filter(([, v]) => v)
+          .map(([k, v]) => `${k}: ${v}`);
+        document.getElementById("state").textContent =
+          [...attrs, ...vars].join("\n") || "(Standard — nichts gesetzt)";
+      }
+
+      document.getElementById("reset").addEventListener("click", () => {
+        settings = { ...DEFAULTS };
+        for (const [name, entry] of Object.entries(SCHEMA)) {
+          const input = document.getElementById("ctl-" + name);
+          if (!input) continue;
+          if (entry.kind === "flag") input.checked = false;
+          else input.value = entry.kind === "enum" ? entry.values[0] : "0";
+        }
+        render();
+      });
+
+      // Für die Playwright-Prüfung erreichbar machen.
+      window.__a11yDemo = {
+        set,
+        render,
+        cvdSupported: isCvdCorrectionSupported(),
+        get settings() {
+          return settings;
+        },
+      };
+      render();
+    </script>
+  </body>
+</html>

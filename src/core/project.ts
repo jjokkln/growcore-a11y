@@ -82,18 +82,6 @@ export function projectToDom(
         }
         dirty = true;
       }
-    } else if (kind === "range") {
-      var fallback = entry.fallback as number;
-      var num = typeof value === "number" && isFinite(value) ? value : fallback;
-      if (num > (entry.max as number)) num = entry.max as number;
-      if (num < (entry.min as number)) num = entry.min as number;
-      if (num === fallback) {
-        root.style.removeProperty(cssVar as string);
-      } else {
-        var factor = entry.scale as number | undefined;
-        root.style.setProperty(cssVar as string, String(factor ? num * factor : num));
-        dirty = true;
-      }
     } else if (kind === "flag") {
       if (value === true) {
         root.setAttribute(attr, "");
