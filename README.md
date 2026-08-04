@@ -79,20 +79,20 @@ gemessen (Skripte unter `test/browser/`):
 | Ausweg über `<body>` statt `<html>`? | Filter wirkt überall, **bricht aber `position: fixed` in allen drei Engines** — die Wurzel-Ausnahme gilt nur für die Wurzel. Damit unbrauchbar. |
 | Ausweg über `backdrop-filter: url()` auf einer festen Fläche? | Nur chromium. firefox und webkit melden `CSS.supports(…) === true` und tun dann nichts — ein `supports`-Ja ist hier keine Zusage. |
 
-**Folge:** Die Farbfehlsicht-Korrektur ist in Firefox **abgeschaltet**, nicht
-sichtbar wirkungslos. Erkannt wird das über `-moz-orient` (gemessen: nur Firefox),
-was als CSS-Eigenschaft in `a11y.css` **und** über `isCvdCorrectionSupported()`
-in JavaScript mit derselben Bedingung abfragbar ist — kein User-Agent-Test. Ein
-Schalter, der sich umlegen lässt und nichts tut, ist schlimmer als einer, der
-ehrlich fehlt.
+Drei Festlegungen folgen daraus:
 
-Folge: `invert` und die Hochkontrast-Modi laufen als **Token-Override**, nicht als
-CSS-Filter. Damit ist die Top-Layer-Frage gegenstandslos. Echtes `filter`
-benutzen nur Graustufen, Sättigung und die Daltonisierung — dass das Panel die
-mitmacht, ist richtig: wer Graustufen einschaltet, will keine farbige Insel.
-
-Für Seiten ohne Token-System (plain CSS) wird der Invert-Modus **nicht**
-angeboten, weil er dort nur per Filter ginge und in Firefox anders aussähe.
+1. **`invert` und die Hochkontrast-Modi sind Token-Overrides**, kein CSS-Filter.
+   Damit ist die Top-Layer-Frage gegenstandslos — das Panel kann nicht schwarz
+   werden, weil nichts invertiert wird. Echtes `filter` benutzen nur Graustufen,
+   Sättigung und die Daltonisierung; dass das Panel die mitmacht, ist richtig:
+   wer Graustufen einschaltet, will keine farbige Insel.
+2. **Die Farbfehlsicht-Korrektur ist in Firefox abgeschaltet**, nicht sichtbar
+   wirkungslos. Erkannt über `-moz-orient` (gemessen: nur Firefox) — als
+   CSS-Eigenschaft in `a11y.css` **und** über `isCvdCorrectionSupported()` in
+   JavaScript dieselbe Bedingung, kein User-Agent-Test. Ein Schalter, der sich
+   umlegen lässt und nichts tut, ist schlimmer als einer, der ehrlich fehlt.
+3. **Auf Seiten ohne Token-System (plain CSS) gibt es keinen Invert-Modus**, weil
+   er dort nur per Filter ginge und in Firefox anders aussähe als in Chromium.
 
 ## Befehle
 

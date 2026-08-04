@@ -1,0 +1,333 @@
+/*
+ * ============================================================================
+ * panel.css — Trigger und Panel des Barrierefreiheits-Widgets
+ * ============================================================================
+ *
+ * Eigener Namensraum `gc-a11y-*`, keine Tailwind-Klassen, keine Design-Token des
+ * Projekts. Das ist der Preis dafür, dass dieselbe Datei in ein shadcn-Projekt,
+ * in eine Tailwind-Landingpage und in eine Seite mit handgeschriebenem CSS
+ * fällt, ohne dort etwas vorauszusetzen.
+ *
+ * Zwei Dinge, die das Panel bewusst MITMACHT: die Schriftvergrößerung (wer 175 %
+ * braucht, braucht sie auch hier) und die Filtermodi (wer Graustufen einschaltet,
+ * will keine farbige Insel). Es liegt im Top Layer, also über allem, ohne dass
+ * eine z-index-Zahl erfunden werden muss.
+ *
+ * Die Farben sind bewusst hart gesetzt und nicht aus Projekt-Token gezogen: Das
+ * Panel ist die Bedienoberfläche für die Farbmodi und muss lesbar bleiben, egal
+ * was gerade eingestellt ist. Ein Panel, das im Hochkontrast-Modus seine eigenen
+ * Token überschrieben bekommt, kann sich nicht mehr zurückschalten.
+ * ============================================================================
+ */
+
+.gc-a11y-trigger,
+.gc-a11y-panel {
+  --gc-a11y-bg: #ffffff;
+  --gc-a11y-fg: #16181d;
+  --gc-a11y-muted: #5a6070;
+  --gc-a11y-line: #d6d9e0;
+  --gc-a11y-accent: #1c4ed8;
+  --gc-a11y-accent-fg: #ffffff;
+  --gc-a11y-surface: #f4f5f8;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--gc-a11y-fg);
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gc-a11y-trigger,
+  .gc-a11y-panel {
+    --gc-a11y-bg: #14161a;
+    --gc-a11y-fg: #f1f2f4;
+    --gc-a11y-muted: #a4abbb;
+    --gc-a11y-line: #333844;
+    --gc-a11y-accent: #7aa2ff;
+    --gc-a11y-accent-fg: #0b1020;
+    --gc-a11y-surface: #1d2027;
+  }
+}
+
+.gc-a11y-panel *,
+.gc-a11y-trigger * {
+  box-sizing: border-box;
+}
+
+/* --- Trigger --------------------------------------------------------------
+ * Unten LINKS, weil rechts unten in fast jedem Projekt schon etwas sitzt
+ * (Chat, Feedback-Knopf, Cookie-Hinweis). `env(safe-area-inset-*)` wegen der
+ * Home-Anzeige auf iPhones.
+ *
+ * 3rem = 48px trifft die 44×44px aus WCAG 2.5.5 (Target Size) mit Reserve.
+ */
+.gc-a11y-trigger {
+  position: fixed;
+  z-index: 2147483000;
+  inset-inline-start: max(1rem, env(safe-area-inset-left));
+  inset-block-end: max(1rem, env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid var(--gc-a11y-line);
+  border-radius: 999px;
+  background: var(--gc-a11y-bg);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.14), 0 8px 24px rgb(0 0 0 / 0.1);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.gc-a11y-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.18), 0 12px 32px rgb(0 0 0 / 0.12);
+}
+.gc-a11y-trigger:focus-visible {
+  outline: 3px solid var(--gc-a11y-accent);
+  outline-offset: 3px;
+}
+.gc-a11y-trigger svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+}
+
+/* Ein kleiner Punkt, wenn etwas eingestellt ist — damit man beim nächsten
+ * Besuch sieht, dass die Seite nicht „kaputt" ist, sondern man selbst etwas
+ * verändert hat. Rein dekorativ; die Ansage übernimmt das aria-label. */
+.gc-a11y-trigger[data-active]::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 0.15rem;
+  inset-inline-end: 0.15rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 2px solid var(--gc-a11y-bg);
+  border-radius: 999px;
+  background: var(--gc-a11y-accent);
+}
+
+/* --- Panel ---------------------------------------------------------------- */
+.gc-a11y-panel {
+  /* `popover` bringt seine eigene Positionierung mit; diese hier setzt sie
+     bewusst auf „über dem Trigger“ zurück. */
+  position: fixed;
+  inset: auto;
+  inset-inline-start: max(1rem, env(safe-area-inset-left));
+  inset-block-end: calc(max(1rem, env(safe-area-inset-bottom)) + 3.5rem);
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(34rem, calc(100dvh - 6rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--gc-a11y-line);
+  border-radius: 0.875rem;
+  background: var(--gc-a11y-bg);
+  box-shadow: 0 8px 40px rgb(0 0 0 / 0.22);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.gc-a11y-panel::backdrop {
+  background: transparent;
+}
+.gc-a11y-panel:not(:popover-open) {
+  display: none;
+}
+
+.gc-a11y-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--gc-a11y-line);
+  position: sticky;
+  top: 0;
+  background: var(--gc-a11y-bg);
+}
+.gc-a11y-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+.gc-a11y-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--gc-a11y-muted);
+}
+.gc-a11y-close {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--gc-a11y-muted);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.gc-a11y-close:hover {
+  background: var(--gc-a11y-surface);
+  color: var(--gc-a11y-fg);
+}
+.gc-a11y-close:focus-visible,
+.gc-a11y-panel button:focus-visible,
+.gc-a11y-panel a:focus-visible {
+  outline: 3px solid var(--gc-a11y-accent);
+  outline-offset: 2px;
+}
+
+.gc-a11y-body {
+  padding: 0.5rem 1rem 1rem;
+}
+
+/* Gruppen sind echte fieldset/legend-Paare: dadurch liest ein Screenreader die
+   Gruppenüberschrift vor jeder Option mit, ohne dass wir aria nachbauen. */
+.gc-a11y-group {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  border: 0;
+}
+.gc-a11y-group > legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--gc-a11y-muted);
+}
+
+/* Segmentierte Auswahl: native Radios, optisch als Reihe. Die Eingabe selbst
+   bleibt im Baum (nur visuell verborgen), damit Tastatur und Screenreader die
+   normale Radiogruppen-Bedienung bekommen — Pfeiltasten inklusive. */
+.gc-a11y-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border: 1px solid var(--gc-a11y-line);
+  border-radius: 0.5rem;
+  padding: 0.2rem;
+  background: var(--gc-a11y-surface);
+}
+.gc-a11y-seg label {
+  flex: 1 1 auto;
+  text-align: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+}
+.gc-a11y-seg input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.gc-a11y-seg input:checked + span {
+  background: var(--gc-a11y-accent);
+  color: var(--gc-a11y-accent-fg);
+}
+.gc-a11y-seg span {
+  display: block;
+  padding: 0.35rem 0.5rem;
+  margin: -0.35rem -0.5rem;
+  border-radius: 0.375rem;
+}
+.gc-a11y-seg input:focus-visible + span {
+  outline: 3px solid var(--gc-a11y-accent);
+  outline-offset: 2px;
+}
+
+/* Schalter: bewusst eine normale Checkbox mit sichtbarem Kästchen statt eines
+   nachgebauten „Toggle“. Ein echtes <input type=checkbox> bringt Rolle,
+   Zustand, Tastaturbedienung und die Ansage „aktiviert/deaktiviert“ mit. */
+.gc-a11y-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.15rem;
+  cursor: pointer;
+}
+.gc-a11y-switch input {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--gc-a11y-accent);
+  cursor: pointer;
+}
+.gc-a11y-switch input:focus-visible {
+  outline: 3px solid var(--gc-a11y-accent);
+  outline-offset: 2px;
+}
+
+.gc-a11y-note {
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.6rem;
+  border-inline-start: 3px solid var(--gc-a11y-line);
+  background: var(--gc-a11y-surface);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--gc-a11y-muted);
+}
+
+.gc-a11y-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gc-a11y-line);
+}
+.gc-a11y-reset {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--gc-a11y-line);
+  border-radius: 0.5rem;
+  background: var(--gc-a11y-bg);
+  color: var(--gc-a11y-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.gc-a11y-reset:hover:not(:disabled) {
+  background: var(--gc-a11y-surface);
+}
+.gc-a11y-reset:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.gc-a11y-link {
+  font-size: 0.75rem;
+  color: var(--gc-a11y-accent);
+}
+
+/* Nur für Screenreader — die Ansage der Zustandsänderungen. */
+.gc-a11y-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Wer weniger Bewegung will, bekommt keine. Gilt auch für unseren eigenen
+   Schalter „Animationen stoppen“, der dieselbe Regel global setzt. */
+@media (prefers-reduced-motion: reduce) {
+  .gc-a11y-trigger {
+    transition: none;
+  }
+  .gc-a11y-trigger:hover {
+    transform: none;
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "@growcore/a11y",
   "version": "0.1.0",
-  "description": "Barrierefreiheits-Panel für GrowCore-Websites: Schriftgröße, Kontrast, Farbfehlsicht-Korrektur, Lesehilfen. Framework-freier Kern, optionale React-Hülle.",
+  "description": "Barrierefreiheits-Panel f\u00fcr GrowCore-Websites: Schriftgr\u00f6\u00dfe, Kontrast, Farbfehlsicht-Korrektur, Lesehilfen. Framework-freier Kern, optionale React-H\u00fclle.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -10,17 +10,27 @@
     ".": "./dist/core/index.js",
     "./react": "./dist/react/index.js",
     "./styles.css": "./src/styles/a11y.css",
-    "./fonts/*": "./fonts/*"
+    "./fonts/*": "./fonts/*",
+    "./panel.css": "./src/styles/panel.css"
   },
-  "files": ["dist", "src/styles", "fonts"],
+  "files": [
+    "dist",
+    "src/styles",
+    "fonts"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build --silent && node --test test/*.test.mjs",
-    "demo": "npm run build --silent && node demo/serve.mjs"
+    "demo": "npm run build --silent && node demo/serve.mjs",
+    "prepare": "tsc -p tsconfig.json || true"
   },
   "devDependencies": {
     "@types/node": "^20.19.9",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
