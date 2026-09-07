@@ -1,7 +1,7 @@
 {
   "name": "@growcore/a11y",
   "version": "0.1.0",
-  "description": "Barrierefreiheits-Panel f\u00fcr GrowCore-Websites: Schriftgr\u00f6\u00dfe, Kontrast, Farbfehlsicht-Korrektur, Lesehilfen. Framework-freier Kern, optionale React-H\u00fclle.",
+  "description": "Barrierefreiheits-Panel für GrowCore-Websites: Schriftgröße, Kontrast, Farbfehlsicht-Korrektur, Lesehilfen. Framework-freier Kern, optionale React-Hülle.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -30,8 +30,6 @@
     "@types/node": "^20.19.9",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
