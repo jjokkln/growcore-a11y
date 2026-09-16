@@ -4,10 +4,10 @@ Anweisungen für KI-Agenten (Cursor, Codex, Copilot, Claude Code) und für
 Menschen, die in diesem Repository arbeiten. Der Block unten ist zentral
 gepflegt und wird überschrieben — Projektspezifisches gehört darunter.
 
-<!-- BEGIN:growcore-pflicht 99ed75bf3ebf — generiert aus AI-OS/30_Knowledge/Rules/pflichtkern.md, nicht von Hand ändern -->
+<!-- BEGIN:growcore-pflicht ffeffd4ff445 — generiert aus AI-OS/30_Knowledge/Rules/pflichtkern.md, nicht von Hand ändern -->
 ## Pflichtkern GrowCore — nicht verhandelbar
 
-Diese zehn Punkte gelten in **jedem** Projekt, für **jeden** Agenten und jeden
+Diese zwölf Punkte gelten in **jedem** Projekt, für **jeden** Agenten und jeden
 Menschen, der hier Code schreibt. Sie sind keine Empfehlungen. Wer einen davon
 nicht erfüllen kann, schreibt das auf, statt ihn stillschweigend zu übergehen.
 
@@ -66,8 +66,13 @@ Fokus, Kontrast 4,5:1, Alt-Texte, verknüpfte Formularbeschriftungen, genau eine
 Barrierefreiheits-Panel (`@growcore/a11y`) und eine Seite `/barrierefreiheit` mit
 erreichbarem Kontakt. Das Panel ist ein Komfort-Plus — es ersetzt die Arbeit am
 Markup nicht.
-*Beweis:* `npx @axe-core/cli <url> --exit` **plus** Handprüfung. Ein automatischer
-Checker findet höchstens ein Drittel.
+*Beweis:* **ohne Anmeldung** `npx @axe-core/cli <url> --exit`. **Mit Anmeldung
+`@axe-core/playwright`, nicht der CLI** — der kommt an keine Sitzung und deckt bei
+einer Verwaltungsoberfläche nur `/login` und `/barrierefreiheit`, also genau die
+Flächen, um die es nicht geht (Poisea, 2026-09-03). Playwright ins Scratchpad
+installieren, nicht ins Kundenrepo. Beides **plus** Handprüfung: ein automatischer
+Checker findet höchstens ein Drittel. Anleitung und die drei Fallen:
+`30_Knowledge/Referenzen/playwright-axe.md`.
 
 **8. Formulare fragen nur das Nötige und kommen an.** Datenschutzhinweis nach
 Art. 13 direkt am Formular, nur Felder, die wirklich gebraucht werden. Und die
@@ -79,9 +84,10 @@ Anfrage ist keine Lead-Maschine, sondern eine Broschüre.
 anon-Key ist öffentlich — jede Tabelle bekommt explizite Minimal-Policies,
 Migration und RLS im selben Commit. Server Actions und Routes prüfen zusätzlich
 selbst `auth.getUser()`; die Middleware allein reicht nicht. Bei Next.js heißt
-sie `proxy.ts` (Funktion `proxy()`) — eine `middleware.ts` wird **stillschweigend
-ignoriert**, ohne Fehler und ohne Warnung. So lag bei einem Projekt `/admin`
-live offen im Netz.
+sie `proxy.ts` (Funktion `proxy()`) — eine `middleware.ts` ist **veraltet**: in
+Next 16.1 läuft sie noch mit Deprecation-Warnung, beide Dateien nebeneinander
+brechen den Build, und eine spätere Version kann sie fallen lassen. Bei einem
+Projekt lag `/admin` live offen im Netz, weil niemand den Beweis geführt hatte.
 *Beweis:* `curl -s -o /dev/null -w "%{http_code}" <geschützter-pfad>` plus die
 Zeile `ƒ Proxy (Middleware)` im Build-Output. Getestet wird mit **jeder** Rolle,
 einschließlich eines Zugangs ohne Berechtigung. Als Admin sieht immer alles
@@ -94,11 +100,77 @@ Kopfbereich, Fußbereich, Impressum, Datenschutz, Metadaten und strukturierte
 Daten bedienen. Ändert sich eine Telefonnummer, ändert man sie einmal statt an
 neun Stellen — und vergisst die zehnte nicht.
 
+**11. (App) Fünf bekannte Auth-Fehler sind ausgeschlossen, nicht nur bedacht.**
+Diese fünf tauchen in echten Projekten immer wieder auf und werden aktiv
+geprüft, nicht nur beim Bauen im Kopf behalten:
+1. Session-Token steht **nicht** in `localStorage`/`sessionStorage` — ein
+   einziges XSS liest sonst die Session aus. Session gehört ins
+   `httpOnly`-Cookie.
+2. Admin-/Rollen-Check läuft **serverseitig**, nicht nur in einer
+   `'use client'`-Komponente — ein clientseitiger Check ist im DevTools
+   umgehbar und entscheidet nur über Sichtbarkeit, nie über Zugriff.
+3. Signup ist verifiziert (E-Mail-Bestätigung, kein `mailer_autoconfirm` in
+   Produktion) — sonst kann sich jeder als jemand anderes ausgeben, bevor der
+   echte Inhaber es merkt. 2FA/OTP für sensible Rollen (Admin, Zahlungen).
+4. Login- **und** Passwort-Reset-Endpoint haben Rate-Limiting — ohne das ist
+   Brute-Force nur eine Frage der Zeit. Bei Supabase Auth die
+   `[auth.rate_limit]`-Werte gegen die echte Anfragefrequenz prüfen, nicht nur
+   die Sektion auf Existenz.
+5. Passwortregeln (Mindestlänge/-komplexität) sind **serverseitig** bzw. in
+   der Supabase-Auth-Konfiguration durchgesetzt — eine Zod-/Formularregel im
+   Frontend ist reine UX und per direktem API-Call umgehbar.
+*Beweis:* siehe Skill `security-audit`, Schritt 1b — dort steht je Punkt der
+konkrete Grep/Check.
+
+**12. Jede Handlung, die Daten verändert, hinterlässt eine Spur — und die Spur
+wird gezählt, nicht geglaubt.** Der Satz „wer hat das geändert" wird **immer**
+rückwirkend gestellt; wer erst dann anfängt aufzuzeichnen, hat die Antwort nicht
+mehr. Drei Fälle, alle drei gemeint:
+
+1. **Software mit Konten** bekommt ein Audit-Log mit vier Eigenschaften: Die
+   Schreibfunktion liegt in einem **normalen Modul**, nicht in einem
+   `'use server'`-Modul (sie schreibt mit Service-Role und wäre als Server
+   Action ein offener Schreibkanal ins Protokoll — fremde Nutzer-Id, erfundene
+   Aktion, fremder Mandant). Die Beschriftungstabelle ist über die Aktions-Union
+   typisiert, sodass eine neue Aktion ohne Beschriftung ein **Typfehler** ist.
+   Der Betroffene ist ein **Fremdschlüssel und ein Pflichtfeld** — ein Name im
+   JSONB ist eine Namensgleichheit, keine Zuordnung. Und ein **Abdeckungstest**
+   verlangt für jede schreibende Server-Funktion entweder einen Protokollaufruf
+   oder einen **begründeten** Eintrag in einer Ausnahmeliste.
+2. **Die Verwaltungsfläche einer Website zählt dazu**, auch wenn die Website
+   selbst keine Konten hat. Genau dieser Fall wird übersehen — „ist ja nur eine
+   Landingpage", während dort jemand Preise, Texte und Bilder ändert, die ein
+   Kunde als Zusage liest.
+3. **Handlungen von Besuchern ohne Konto** werden als Datensatz festgehalten,
+   nicht als Mail: abgeschicktes Formular, erteilte oder widerrufene
+   Einwilligung, hochgeladene Datei. Mit Zeitpunkt, mit dem, was gesendet wurde,
+   und mit dem, was daraus folgte. **Eine Mail ist kein Nachweis** — sie kann
+   verloren gehen, ist nicht abfragbar und nicht zählbar; und für eine
+   Einwilligung verlangt Art. 7 Abs. 1 DSGVO ausdrücklich, dass man sie
+   **nachweisen** kann.
+
+⚠️ **Ein Protokoll über Menschen ist selbst eine Verarbeitung.** Es gehört mit
+Zweck und Aufbewahrungsfrist in die Datenschutzerklärung, und es bekommt nur die
+Felder, die es braucht. Standortdaten, IP-Adressen oder ganze Formularinhalte
+„weil man sie gerade hat" sind derselbe Fehler wie ein zu langes Formular in
+Punkt 8 — nur an einer Stelle, an die niemand mehr hinsieht.
+
+⚠️ **Der Grund, warum dieser Punkt einen Test verlangt und die anderen nicht:**
+Ein fehlender Protokolleintrag **macht nichts kaputt**. Kein Fehler, kein roter
+Test, keine Warnung — dieselbe Klasse wie die Rechtstexte in Punkt 4. In einem
+echten Projekt ist so die Wochenfreigabe eines Zeiterfassungssystems sechs
+Monate lang ohne jede Zeile geblieben, also der Schritt, nach dem Geld fließt,
+während die *Rücknahme* protokolliert wurde. Deshalb beim Bauen **paarweise**
+prüfen: freigeben/zurücknehmen, sperren/entsperren, zuweisen/entziehen.
+*Beweis:* `npm run test:audit-abdeckung` grün — und für den dritten Fall die
+abgeschickte Probe in der Datenbank wiedergefunden, wie in Punkt 8.
+
 ---
 
 **Vor Go-Live, in dieser Reihenfolge:** `/rechtscheck` (darf die Seite überhaupt
-online — Punkte 1–7) → `/launch-check` (funktioniert und hält sie — Punkte 8–10)
-→ die Blueprint-Checkliste des Projekttyps. Beide Skills prüfen nur und melden
+online — Punkte 1–7) → `/launch-check` (funktioniert und hält sie — Punkte 8–10
+und 12) → `/security-audit` (Punkt 11, Auth gehärtet) → die Blueprint-Checkliste des
+Projekttyps. Diese Skills prüfen nur und melden
 „nicht verifiziert", wo sie nichts beweisen können; das ist die Bedingung dafür,
 dass man ihrem grünen Haken glauben darf.
 
