@@ -299,12 +299,28 @@ html:is([data-a11y-color="contrast-light"], [data-a11y-color="contrast-dark"], [
   color: var(--foreground) !important;
 }
 
-/* Linkfarbe nur dort, wo ein Modus sie definiert (die beiden Hochkontrast-Stufen). */
-html[data-a11y-color] a[href] {
-  color: var(--a11y-link, inherit);
+/*
+ * Linkfarbe nur dort, wo ein Modus sie definiert (die beiden Hochkontrast-Stufen),
+ * und nur an Links, die wie Text aussehen.
+ *
+ * Vorher galt die Regel für `html[data-a11y-color] a[href]` — also in JEDEM
+ * Farbmodus und an JEDEM Link. Zwei Folgen, gemessen in boltwork (23.09.2026):
+ * (1) Ein als Knopf gestalteter Link bekam `#0000ee` auf seine blaue Fläche
+ *     (1,8:1) und auf dunklem Grund 2,1:1. (2) Im Nachtmodus, der gar keine
+ *     Linkfarbe definiert, fiel die Regel auf `inherit` zurück und überschrieb
+ *     damit die eigene Schriftfarbe des Knopfs (4,18:1).
+ * Knopf-Links erkennt CSS nicht an ihrer Fläche; deshalb die drei Merkmale,
+ * die ein Projekt tatsächlich setzt: `data-slot="button"` (shadcn/ui, auch mit
+ * `asChild`), `role="button"`, und als ausdrücklicher Ausweg
+ * `data-a11y-keep-color`. `:where()` hält die Spezifität der Ausnahme bei null.
+ */
+html:is([data-a11y-color="contrast-light"], [data-a11y-color="contrast-dark"])
+  a[href]:not(:where([data-slot="button"], [role="button"], [data-a11y-keep-color])) {
+  color: var(--a11y-link);
 }
-html[data-a11y-color] a[href]:visited {
-  color: var(--a11y-link-visited, var(--a11y-link, inherit));
+html:is([data-a11y-color="contrast-light"], [data-a11y-color="contrast-dark"])
+  a[href]:not(:where([data-slot="button"], [role="button"], [data-a11y-keep-color])):visited {
+  color: var(--a11y-link-visited, var(--a11y-link));
 }
 
 /* ============================================================================

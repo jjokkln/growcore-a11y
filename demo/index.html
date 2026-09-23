@@ -159,6 +159,17 @@
         word-break: break-all;
         color: var(--muted-foreground);
       }
+      /* Absichtlich eine Klasse, kein style-Attribut: Ein Inline-Stil schlägt
+       * jede Stylesheet-Regel, und der Test in effects.mjs wäre dann auch bei
+       * der alten, fehlerhaften Linkregel grün. */
+      .button-link {
+        display: inline-block;
+        padding: 0.4em 0.9em;
+        border-radius: 6px;
+        background: #1d4ed8;
+        color: #ffffff;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
@@ -207,6 +218,15 @@
         Hier steht ein <a href="#eins">Link im Fließtext</a>, dazu ein
         <a href="https://example.org">zweiter</a> und ein
         <a href="#drei">dritter</a>, damit „Links hervorheben" beurteilbar ist.
+      </p>
+      <p>
+        <a
+          id="button-link"
+          href="#vier"
+          data-slot="button"
+          class="button-link"
+          >Als Knopf gestalteter Link</a
+        >
       </p>
       <ul>
         <li>Ein Listeneintrag.</li>

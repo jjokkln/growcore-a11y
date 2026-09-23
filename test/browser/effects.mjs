@@ -272,6 +272,44 @@ async function run(engineName, type) {
     await reset(page);
   }
 
+  // --- 5b. Linkfarbe: nur Textlinks, nur in den Hochkontrast-Stufen ------
+  // Gemessen wird die berechnete Farbe, nicht ein Pixel: Es geht darum, WELCHE
+  // Regel greift. Kontrolle: der Fließtext-Link muss sich im Hochkontrast
+  // tatsächlich umfärben — sonst beweist das Stehenbleiben des Knopfs nichts.
+  const linkColor = () => computed(page, 'a[href="#eins"]', "color");
+  const buttonColor = () => computed(page, "#button-link", "color");
+  const linkBefore = await linkColor();
+  for (const [mode, want] of [
+    ["contrast-light", "rgb(0, 0, 238)"],
+    ["contrast-dark", "rgb(255, 255, 0)"],
+  ]) {
+    await setSetting(page, "color", mode);
+    ok(`Textlink bekommt in „${mode}“ die Linkfarbe`, (await linkColor()) === want, await linkColor());
+    ok(
+      `… Knopf-Link (data-slot="button") behält seine Schrift`,
+      (await buttonColor()) === "rgb(255, 255, 255)",
+      await buttonColor(),
+    );
+    await reset(page);
+  }
+  await setSetting(page, "color", "night");
+  ok(
+    "Nachtmodus (ohne Linkfarbe) lässt den Knopf-Link unberührt",
+    (await buttonColor()) === "rgb(255, 255, 255)",
+    await buttonColor(),
+  );
+  // Die Demo gibt Links keine eigene Farbe, sie tragen also die des Browsers
+  // (die sich mit `color-scheme: dark` selbst aufhellt — das ist nicht unsere
+  // Regel). Die alte Regel machte daraus die Absatzfarbe (`inherit`), und
+  // genau das darf nicht mehr passieren.
+  const paragraphColor = await computed(page, "#content p", "color");
+  ok(
+    "… und macht den Textlink nicht zur Absatzfarbe",
+    (await linkColor()) !== paragraphColor,
+    `Link ${await linkColor()} · Absatz ${paragraphColor} · vorher ${linkBefore}`,
+  );
+  await reset(page);
+
   // --- 6. Sättigung / Graustufen ----------------------------------------
   const greenPoint = await centerOf(page, "#sw-green");
   const [greenBefore] = await pixels(page, [greenPoint]);
