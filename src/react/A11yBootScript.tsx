@@ -23,6 +23,14 @@ export function A11yBootScript({
   return (
     <script
       nonce={nonce}
+      // React warnt im Dev-Modus, sobald ein Client-Render ein <script> erzeugt
+      // („Encountered a script tag while rendering React component“), etwa bei
+      // einem Re-Render des Wurzel-Layouts. Auf dem Server bleibt es
+      // ausführbares JavaScript, auf dem Client wird es zu inertem Text — dort
+      // liefe es ohnehin nicht. Muster aus dem Next-Guide „Preventing flash
+      // before hydration“; suppressHydrationWarning schluckt den type-Unterschied.
+      type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
+      suppressHydrationWarning
       // Der Inhalt ist vollständig selbst erzeugt (siehe core/boot.ts) und
       // enthält keine Nutzereingabe: der einzige variable Teil ist der
       // Speicherschlüssel, und der geht durch JSON.stringify.
