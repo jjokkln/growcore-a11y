@@ -22,3 +22,32 @@ export function isCvdCorrectionSupported(): boolean {
   if (typeof CSS === "undefined" || typeof CSS.supports !== "function") return true;
   return !CSS.supports("-moz-orient", "inline");
 }
+
+/**
+ * Kann dieser Browser das Panel über die native Popover-API zeigen?
+ *
+ * Zwei Bedingungen, und beide müssen stimmen: die DOM-Seite
+ * (`HTMLElement.prototype.togglePopover`) **und** die CSS-Seite
+ * (`selector(:popover-open)`). `panel.css` blendet das Panel mit
+ * `:not(:popover-open)` aus und hat für Browser ohne diesen Selektor eine
+ * eigene `@supports not selector(:popover-open)`-Regel. Wäre hier nur die
+ * DOM-Seite abgefragt, könnten JavaScript und CSS verschiedener Meinung sein —
+ * dann bliebe das Panel unsichtbar, obwohl der Knopf „offen" meldet.
+ *
+ * Betrifft praktisch Safari vor 17 (iPadOS 16, ältere iPhones): Dort fehlt die
+ * API ganz, und `.gc-a11y-panel:not(:popover-open)` wird als ungültige Regel
+ * verworfen — das Panel stand dauerhaft offen über der Seite (iPad, 22.10.2026).
+ *
+ * Auf dem Server gibt es weder `HTMLElement` noch `CSS`: dort `true`, weil das
+ * serverseitige HTML dem entsprechen soll, was die Mehrheit der Browser kann.
+ */
+export function isPopoverSupported(): boolean {
+  if (typeof HTMLElement === "undefined") return true;
+  if (typeof HTMLElement.prototype.togglePopover !== "function") return false;
+  if (typeof CSS === "undefined" || typeof CSS.supports !== "function") return true;
+  try {
+    return CSS.supports("selector(:popover-open)");
+  } catch {
+    return false;
+  }
+}

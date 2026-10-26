@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import { isCvdCorrectionSupported } from "../core/capabilities.js";
+import { isCvdCorrectionSupported, isPopoverSupported } from "../core/capabilities.js";
+import { attachPopoverFallback, type PopoverFallback } from "../core/popover-fallback.js";
 import { SCHEMA, TEXT_SCALES } from "../core/schema.js";
 import type { A11ySettings } from "../core/settings.js";
 import { A11Y_LABELS, type A11yLabels } from "./labels.js";
@@ -23,6 +24,12 @@ import { useA11y } from "./use-a11y.js";
  *
  * Der Preis: keine Abhängigkeit zu Base UI oder Radix, damit dieselbe Datei in
  * jedes Projekt fällt — auch in eines ohne Design-System.
+ *
+ * Wo die API fehlt (Safari vor 17, iPadOS 16), übernimmt nach dem Mounten
+ * `attachPopoverFallback` aus dem Kern dieselben vier Dinge; das
+ * `popover`-Attribut fällt dann weg, `panel.css` steuert die Sichtbarkeit über
+ * `data-gc-a11y-open`. Bis zur Hydration blendet dort
+ * `@supports not selector(:popover-open)` das Panel aus.
  *
  * ── Warum native Formularelemente ────────────────────────────────────────────
  *
@@ -80,7 +87,25 @@ export function A11yWidget({
   const { settings, set, reset, pristine } = useA11y();
   const panelId = useId().replace(/:/g, "");
   const panelRef = useRef<HTMLDivElement>(null);
+  const fallbackRef = useRef<PopoverFallback | null>(null);
   const [open, setOpen] = useState(false);
+  // Wie `cvdSupported`: Startwert `true`, damit das Server-HTML dem entspricht,
+  // was die Mehrheit kann; ohne Popover-API schaltet das Mounten um.
+  const [nativePopover, setNativePopover] = useState(true);
+  useEffect(() => {
+    if (!isPopoverSupported()) setNativePopover(false);
+  }, []);
+
+  useEffect(() => {
+    const el = panelRef.current;
+    if (nativePopover || !el) return;
+    const fallback = attachPopoverFallback(el, { onToggle: setOpen });
+    fallbackRef.current = fallback;
+    return () => {
+      fallback.destroy();
+      fallbackRef.current = null;
+    };
+  }, [nativePopover]);
   const [announcement, setAnnouncement] = useState("");
 
   // `isCvdCorrectionSupported()` fragt CSS ab und darf deshalb erst nach dem
@@ -114,11 +139,12 @@ export function A11yWidget({
       const el = panelRef.current;
       if (!el) return;
       event.preventDefault();
-      el.togglePopover();
+      if (fallbackRef.current) fallbackRef.current.toggle();
+      else if (nativePopover) el.togglePopover();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [shortcut]);
+  }, [shortcut, nativePopover]);
 
   /** Ändern plus Ansage — eine Zustandsänderung, die niemand vorliest, ist keine. */
   function change<K extends keyof A11ySettings>(name: K, value: A11ySettings[K], spoken: string) {
@@ -197,6 +223,7 @@ export function A11yWidget({
         popoverTarget={panelId}
         popoverTargetAction="toggle"
         aria-label={pristine ? t.triggerOpen : t.triggerActive}
+        aria-controls={panelId}
         aria-expanded={open}
         data-active={pristine ? undefined : ""}
       >
@@ -207,7 +234,7 @@ export function A11yWidget({
         ref={panelRef}
         id={panelId}
         // eslint-disable-next-line react/no-unknown-property
-        popover="auto"
+        popover={nativePopover ? "auto" : undefined}
         className="gc-a11y-panel"
         role="dialog"
         aria-label={t.title}

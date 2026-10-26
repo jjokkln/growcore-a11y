@@ -144,6 +144,16 @@ weil dort meist Chat, Cookie-Hinweis oder ein Feedback-Knopf sitzt.
 Das Panel liegt im **Top Layer** (native Popover-API) und braucht daher keinen
 `z-index` — es liegt automatisch über allem.
 
+**Browser ohne Popover-API** (Safari vor 17, also iPadOS 16 und ältere iPhones):
+Das Widget erkennt das nach dem Mounten (`isPopoverSupported()`) und schaltet auf
+eine Rückfallebene aus dem Kern (`attachPopoverFallback`): Öffnen und Schließen
+über die Knöpfe, Escape, Klick daneben, Fokus zurück auf den Knopf. Das Panel
+liegt dann mit `z-index: 2147483647` über der Seite statt im Top Layer. Nichts
+einzubauen — aber eine projekteigene Regel, die das Panel dort ausblendet
+(`@supports not selector(:popover-open) { .gc-a11y-trigger, .gc-a11y-panel { display: none } }`,
+so im Projektraum seit dem 22.10.2026), muss beim Anheben des Pins **raus**,
+sonst bleibt der Knopf dort verschwunden.
+
 ---
 
 ## 4. Farbmodi ans Design anschließen

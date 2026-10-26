@@ -111,6 +111,7 @@ npm run demo        # Demo-Seite auf http://localhost:4173/demo/
 node tools/generate-cvd-filters.mjs        # Matrizen neu rechnen, 21 Prüfungen
 node test/browser/effects.mjs              # jede CSS-Regel, chromium
 ENGINES=all node test/browser/effects.mjs  # dieselben 106 Prüfungen ×3 Engines
+ENGINES=all node test/browser/popover-fallback.mjs  # Panel ohne Popover-API (Safari < 17), chromium + webkit
 ```
 
 Die Prüfungen in `test/browser/effects.mjs` messen jeweils die Größe, um die es

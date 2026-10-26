@@ -141,8 +141,38 @@
 .gc-a11y-panel::backdrop {
   background: transparent;
 }
-.gc-a11y-panel:not(:popover-open) {
+.gc-a11y-panel[popover]:not(:popover-open) {
   display: none;
+}
+
+/* --- Ohne Popover-API (Safari vor 17, iPadOS 16) ---------------------------
+ * Dort ist `:popover-open` unbekannt, und ein Browser verwirft eine Regel mit
+ * unbekanntem Selektor GANZ. Die Regel darüber gab es dort also nie: Das Panel
+ * stand dauerhaft offen über der Seite (iPad, 22.10.2026). Deshalb steht sie
+ * allein, und die Rückfallebene steht in eigenen Regeln, die jeder Browser
+ * versteht.
+ *
+ * Nach dem Mounten entfernt `attachPopoverFallback` (src/core/popover-fallback.ts)
+ * das `popover`-Attribut und schaltet `data-gc-a11y-open`. Die erste Regel
+ * greift dann in JEDEM Browser — auch in Chromium, wo der Test die
+ * Rückfallebene erzwingt. Die `@supports`-Regel deckt die Zeit vor der
+ * Hydration ab, in der das Attribut noch steht.
+ *
+ * Ohne Top Layer braucht das Panel einen z-index: der höchste, weil auch die
+ * Blaulicht-Fläche aus a11y.css (2147483646) darunter liegen soll. */
+.gc-a11y-panel:not([popover]):not([data-gc-a11y-open]) {
+  display: none;
+}
+.gc-a11y-panel:not([popover]) {
+  z-index: 2147483647;
+}
+@supports not selector(:popover-open) {
+  .gc-a11y-panel:not([data-gc-a11y-open]) {
+    display: none;
+  }
+  .gc-a11y-panel {
+    z-index: 2147483647;
+  }
 }
 
 .gc-a11y-head {

@@ -16,7 +16,13 @@ export {
   type A11ySettings,
 } from "./settings.js";
 
-export { isCvdCorrectionSupported } from "./capabilities.js";
+export { isCvdCorrectionSupported, isPopoverSupported } from "./capabilities.js";
+export {
+  FALLBACK_OPEN_ATTR,
+  attachPopoverFallback,
+  type PopoverFallback,
+  type PopoverFallbackOptions,
+} from "./popover-fallback.js";
 export { CVD_FILTERS, cvdFilterId, type CvdFilter } from "./cvd-filters.js";
 export { cvdSvgMarkup, ensureCvdSvg } from "./svg-defs.js";
 export { projectToDom, type ProjectionTarget } from "./project.js";
